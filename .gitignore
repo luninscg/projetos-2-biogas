@@ -2,6 +2,9 @@
 ~$*.xlsx
 ~$*.xls
 
+# Serena MCP
+.serena/
+
 # SO
 Thumbs.db
 .DS_Store
