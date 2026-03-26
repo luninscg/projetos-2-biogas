@@ -1,0 +1,7 @@
+# Excel temporário / bloqueio
+~$*.xlsx
+~$*.xls
+
+# SO
+Thumbs.db
+.DS_Store

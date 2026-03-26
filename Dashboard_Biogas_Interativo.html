@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Biogas - Codigestao Anaerobia | UFMS</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+[x-cloak]{display:none!important}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:#475569;border-radius:3px}
+.flow-line{stroke-dasharray:8 4;animation:flowAnim 1.5s linear infinite}
+@keyframes flowAnim{to{stroke-dashoffset:-24}}
+.flow-line-gas{stroke-dasharray:4 4;animation:flowAnim 0.8s linear infinite}
+.equip:hover{filter:brightness(1.2) drop-shadow(0 0 6px rgba(251,191,36,0.4));cursor:pointer}
+.equip{transition:filter 0.2s}
+.kpi-card{transition:all 0.3s;position:relative}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,0.3)}
+.kpi-card:hover .kpi-tooltip{display:block}
+.kpi-tooltip{display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);z-index:60;width:260px;margin-bottom:8px}
+.slider-wrap{position:relative}
+.slider-input{-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:#334155;outline:none;position:relative;z-index:2}
+.slider-input::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#3b82f6;cursor:pointer;position:relative;z-index:3}
+.ideal-bar{position:absolute;height:6px;border-radius:3px;background:rgba(34,197,94,0.3);top:50%;transform:translateY(-50%);z-index:1;pointer-events:none}
+.tab-btn{transition:all 0.2s}
+.tooltip-formula{font-family:'Consolas','Courier New',monospace;font-size:11px;background:#1e293b;color:#94a3b8;padding:4px 8px;border-radius:4px;border:1px solid #334155}
+body{font-family:'Segoe UI',system-ui,sans-serif}
+.tab-content{animation:fadeIn 0.25s ease-in-out}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.guide-step{border-left:3px solid #f59e0b;padding-left:12px;margin-bottom:16px}
+.guide-step h4{color:#fbbf24;font-weight:700;margin-bottom:4px}
+.sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:80;display:none}
+.sidebar-overlay.open{display:block}
+.sidebar-panel{position:fixed;top:0;right:0;width:280px;height:100vh;background:#0f172a;border-left:1px solid #334155;z-index:90;transform:translateX(100%);transition:transform 0.3s ease;overflow-y:auto;padding:16px}
+.sidebar-panel.open{transform:translateX(0)}
+@media print{
+  body{background:#fff!important;color:#000!important;font-size:10pt}
+  .no-print{display:none!important}
+  .kpi-card{border:1px solid #ccc!important;background:#f9f9f9!important}
+  .kpi-card *{color:#000!important}
+  header,footer{background:#f0f0f0!important}
+  header *,footer *{color:#000!important}
+}
+.light .bg-gray-950{background:#f1f5f9!important}
+.light .bg-gray-900{background:#e2e8f0!important}
+.light .text-gray-200,.light .text-white{color:#1e293b!important}
+.light .text-gray-400,.light .text-gray-500,.light .text-gray-600{color:#475569!important}
+.light .border-gray-800{border-color:#cbd5e1!important}
+</style>
+</head>
+<body class="bg-gray-950 text-gray-200 min-h-screen" x-cloak x-data="app()" x-init="init()" :class="lightMode?'light':''">
+
+<!-- HEADER -->
+<header class="bg-gray-900 border-b border-gray-800 px-4 py-2 flex items-center justify-between sticky top-0 z-50">
+  <div class="flex items-center gap-3">
+    <div class="w-9 h-9 bg-amber-500 rounded-lg flex items-center justify-center font-bold text-gray-900 text-base">B</div>
+    <div>
+      <h1 class="text-base font-bold text-white leading-tight">Biogas por Codigestao Anaerobia</h1>
+      <p class="text-xs text-gray-500">Projetos Industriais II - UFMS - v2.2 | <span x-text="checksOk+'/10 checks'"></span></p>
+    </div>
+  </div>
+  <div class="flex items-center gap-1.5">
+    <div class="hidden sm:flex items-center gap-1">
+      <template x-for="v in checks" :key="v.name">
+        <span :class="v.ok?'bg-emerald-900 text-emerald-300':'bg-red-900 text-red-300'" class="text-xs px-1.5 py-0.5 rounded-full" x-text="v.short" :title="v.name"></span>
+      </template>
+    </div>
+    <button @click="lightMode=!lightMode" class="no-print p-1.5 rounded bg-gray-800 hover:bg-gray-700 text-xs" x-text="lightMode?'\u263E':'\u2600'"></button>
+    <button @click="window.print()" class="no-print p-1.5 rounded bg-gray-800 hover:bg-gray-700 text-xs">&#128438;</button>
+    <button @click="sidebarOpen=!sidebarOpen" class="no-print p-1.5 rounded bg-amber-700 hover:bg-amber-600 text-white text-xs font-bold">&#9881; Premissas</button>
+  </div>
+</header>
+
+<!-- KPI CARDS -->
+<div class="px-4 py-2 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+  <template x-for="k in kpis" :key="k.label">
+    <div class="kpi-card rounded-lg p-2 border" :class="k.alert?'bg-red-950 border-red-800':'bg-gray-900 border-gray-800'">
+      <div class="text-[10px] text-gray-500 truncate leading-tight" x-text="k.label"></div>
+      <div class="text-base font-bold mt-0.5 leading-tight truncate" :class="k.alert?'text-red-400':'text-white'" x-text="k.display"></div>
+      <div class="text-[10px] text-gray-600 leading-tight truncate" x-text="k.unit"></div>
+      <div class="kpi-tooltip bg-gray-800 border border-gray-700 rounded-lg p-3 shadow-xl text-xs">
+        <div class="font-bold text-amber-400 mb-1" x-text="k.label"></div>
+        <div class="text-gray-300 mb-1" x-text="k.explain"></div>
+        <div class="tooltip-formula" x-text="k.formula"></div>
+        <div class="mt-1 text-gray-500" x-text="'Faixa: '+k.range"></div>
+      </div>
+    </div>
+  </template>
+</div>
+
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" :class="sidebarOpen?'open':''" @click="sidebarOpen=false"></div>
+<!-- SIDEBAR PANEL (right, fixed, over content) -->
+<div class="sidebar-panel no-print" :class="sidebarOpen?'open':''">
+  <div class="flex justify-between items-center mb-3">
+    <h2 class="font-bold text-sm text-amber-400">&#9881; Premissas</h2>
+    <button @click="sidebarOpen=false" class="text-gray-500 hover:text-gray-300 text-lg">&times;</button>
+  </div>
+  <!-- CENARIOS SALVOS -->
+  <div class="mb-3 p-2 bg-gray-900 rounded-lg border border-gray-800">
+    <div class="text-xs text-gray-500 mb-1.5 font-bold">Cenarios salvos</div>
+    <div class="flex gap-1 mb-1.5">
+      <template x-for="(c,i) in savedScenarios" :key="i">
+        <button @click="loadScenario(i)" class="flex-1 py-1 text-[10px] rounded border" :class="activeScenario===i?'bg-amber-700 border-amber-600 text-white':'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700'" x-text="c.name"></button>
+      </template>
+    </div>
+    <button @click="saveCurrentToScenario()" class="w-full py-1 bg-gray-800 hover:bg-gray-700 text-[10px] rounded text-gray-400">Salvar atual no cenario <span x-text="activeScenario+1"></span></button>
+  </div>
+  <!-- SLIDERS -->
+  <template x-for="s in sliders" :key="s.id">
+    <div class="mb-2">
+      <div class="flex justify-between text-xs mb-0.5">
+        <span class="text-gray-400" x-text="s.label"></span>
+        <span class="text-white font-mono text-[11px]" x-text="s.val.toFixed(s.dec)+' '+s.unit"></span>
+      </div>
+      <div class="slider-wrap">
+        <div class="ideal-bar" :style="'left:'+s.idealLeft+'%;width:'+s.idealWidth+'%'" x-show="s.idealWidth>0"></div>
+        <input type="range" class="slider-input w-full" :min="s.min" :max="s.max" :step="s.step" x-model.number="s.val" @input="recalc()">
+      </div>
+    </div>
+  </template>
+  <button @click="resetDefaults()" class="w-full mt-1 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs rounded text-gray-400">Restaurar padrao</button>
+</div>
+
+<!-- MAIN CONTENT (full width, no sidebar stealing space) -->
+<div class="px-4 pb-4" style="height:calc(100vh - 155px)">
+  <div class="flex gap-1 mb-2 flex-wrap no-print">
+    <template x-for="t in tabs" :key="t.id">
+      <button @click="activeTab=t.id" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium"
+        :class="activeTab===t.id?'bg-amber-600 text-white':'bg-gray-800 text-gray-400 hover:bg-gray-700'">
+        <span x-text="t.icon+' '+t.name"></span>
+      </button>
+    </template>
+  </div>
+  <div class="bg-gray-900 rounded-lg border border-gray-800 overflow-auto p-4" style="height:calc(100vh - 198px)">
+
+    <!-- GUIA -->
+    <div x-show="activeTab==='guide'" x-cloak class="tab-content max-w-3xl">
+      <h2 class="text-xl font-bold text-amber-400 mb-4">&#128218; Guia do Processo</h2>
+      <p class="text-sm text-gray-400 mb-4">Simula uma planta de biogas por codigestao de <strong class="text-white">lodo de esgoto</strong>, <strong class="text-white">vinhaca</strong> e <strong class="text-white">residuo organico</strong>. Clique em <span class="bg-amber-700 text-white px-1.5 py-0.5 rounded text-xs">&#9881; Premissas</span> no topo para ajustar parametros.</p>
+      <div class="guide-step"><h4>1. Digestao Anaerobia</h4><p class="text-xs text-gray-400">Decomposicao de materia organica na ausencia de O2 em 4 etapas: Hidrolise, Acidogenese, Acetogenese, Metanogenese. Produtos: biogas (CH4+CO2) e digestato.</p></div>
+      <div class="guide-step"><h4>2. Codigestao</h4><p class="text-xs text-gray-400">Misturar substratos equilibra C/N. Lodo (C/N=8) + Vinhaca (C/N=25) + Residuo (C/N=30) = mistura ~24.6, na faixa ideal 20-30.</p></div>
+      <div class="guide-step"><h4>3. Parametros-chave</h4>
+        <table class="w-full text-xs mt-1"><thead><tr class="bg-gray-800"><th class="px-2 py-1 text-left text-gray-400">Param.</th><th class="px-2 py-1 text-gray-400">Ideal</th><th class="px-2 py-1 text-left text-gray-400">Importancia</th></tr></thead><tbody class="text-gray-300">
+          <tr class="border-b border-gray-800"><td class="px-2 py-1 font-mono text-amber-300">C/N</td><td class="px-2 py-1 text-center">20-30</td><td class="px-2 py-1 text-gray-400">Equilibrio nutricional (Chernicharo, 2007)</td></tr>
+          <tr class="border-b border-gray-800"><td class="px-2 py-1 font-mono text-amber-300">TRH</td><td class="px-2 py-1 text-center">15-25 d</td><td class="px-2 py-1 text-gray-400">Tempo de digestao (Metcalf & Eddy, 2014)</td></tr>
+          <tr class="border-b border-gray-800"><td class="px-2 py-1 font-mono text-amber-300">COV</td><td class="px-2 py-1 text-center">1-4</td><td class="px-2 py-1 text-gray-400">Carga organica; >4 = acidificacao</td></tr>
+          <tr class="border-b border-gray-800"><td class="px-2 py-1 font-mono text-amber-300">T</td><td class="px-2 py-1 text-center">33-37 C</td><td class="px-2 py-1 text-gray-400">Mesofilico otimo (Appels et al., 2008)</td></tr>
+          <tr><td class="px-2 py-1 font-mono text-amber-300">eta_SV</td><td class="px-2 py-1 text-center">45-65%</td><td class="px-2 py-1 text-gray-400">Conversao de materia organica</td></tr>
+        </tbody></table>
+      </div>
+      <div class="guide-step"><h4>4. Refs</h4><ul class="text-xs text-gray-500 space-y-0.5"><li>CHERNICHARO, C.A.L. Reatores Anaerobios, UFMG, 2007</li><li>METCALF & EDDY. Wastewater Engineering, 5th ed, 2014</li><li>TOWLER & SINNOTT. Chemical Eng. Design, 2nd ed, 2012</li><li>PERRY's Chem. Eng. Handbook, 8th ed</li></ul></div>
+    </div>
+
+    <!-- PFD -->
+    <div x-show="activeTab==='pfd'" x-cloak class="tab-content">
+      <div class="flex gap-4">
+        <div class="flex-1 overflow-x-auto">
+          <svg id="pfd-svg" viewBox="0 0 1100 600" class="w-full bg-gray-950 rounded-lg border border-gray-800" style="min-height:420px"></svg>
+          <div class="flex gap-3 mt-2 text-xs text-gray-500 flex-wrap">
+            <span class="flex items-center gap-1"><span class="w-4 h-1 rounded" style="background:#92400e"></span> Lodo</span>
+            <span class="flex items-center gap-1"><span class="w-4 h-1 rounded" style="background:#ca8a04"></span> Biogas</span>
+            <span class="flex items-center gap-1"><span class="w-4 h-1 rounded" style="background:#059669"></span> Processo</span>
+            <span class="flex items-center gap-1"><span class="w-4 h-1 rounded" style="background:#3b82f6"></span> Agua</span>
+            <span class="flex items-center gap-1"><span class="w-4 h-1 rounded" style="background:#ef4444"></span> Calor</span>
+            <span class="flex items-center gap-1"><span class="w-4 h-1 rounded" style="background:#831843"></span> NaOH</span>
+            <span class="text-gray-600">| NBR 6493</span>
+          </div>
+          <div class="mt-2 bg-gray-950 rounded border border-gray-800 p-2 text-xs text-gray-500 flex gap-4 flex-wrap">
+            <span>Regime: <strong class="text-gray-300">Estacionario</strong></span>
+            <span>Base: <strong class="text-gray-300" x-text="p.Q_tot+' m3/dia'"></strong></span>
+            <span>T: <strong class="text-gray-300" x-text="p.T_dig+' degC'"></strong></span>
+            <span>TRH: <strong class="text-gray-300" x-text="p.TRH+' dias'"></strong></span>
+          </div>
+        </div>
+        <div x-show="selectedEquip" class="w-72 flex-shrink-0 bg-gray-950 rounded-lg border border-gray-800 p-3 overflow-y-auto" style="max-height:480px">
+          <div class="flex justify-between items-start mb-2"><h3 class="font-bold text-amber-400 text-sm" x-text="selectedEquip?.tag+' - '+selectedEquip?.name"></h3><button @click="selectedEquip=null" class="text-gray-600 hover:text-gray-400">&times;</button></div>
+          <div class="text-xs text-gray-400 mb-2" x-text="selectedEquip?.func"></div>
+          <template x-if="selectedEquip"><div>
+            <div class="text-xs font-bold text-gray-300 mb-1">Dimensionamento</div>
+            <template x-for="d in selectedEquip.dims" :key="d[0]"><div class="flex justify-between text-xs py-0.5 border-b border-gray-800"><span class="text-gray-500" x-text="d[0]"></span><span class="text-white font-mono" x-text="d[1]"></span></div></template>
+            <div class="text-xs font-bold text-gray-300 mt-2 mb-1">Material</div><div class="text-xs text-gray-400" x-text="selectedEquip.material"></div>
+            <div class="text-xs font-bold text-gray-300 mt-2 mb-1">Norma</div><div class="text-xs text-gray-500" x-text="selectedEquip.norma"></div>
+            <div class="text-xs font-bold text-gray-300 mt-2 mb-1">Formulas</div><div class="tooltip-formula whitespace-pre-wrap" x-text="selectedEquip.formulas"></div>
+          </div></template>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRAFICOS -->
+    <div x-show="activeTab==='charts'" x-cloak class="tab-content">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div id="chart-biogas-comp" class="bg-gray-950 rounded-lg p-2" style="height:320px"></div>
+        <div id="chart-sv-substrato" class="bg-gray-950 rounded-lg p-2" style="height:320px"></div>
+        <div id="chart-termico" class="bg-gray-950 rounded-lg p-2" style="height:320px"></div>
+        <div id="chart-sankey" class="bg-gray-950 rounded-lg p-2" style="height:320px"></div>
+        <div id="chart-elementar" class="bg-gray-950 rounded-lg p-2" style="height:320px"></div>
+        <div id="chart-checks" class="bg-gray-950 rounded-lg p-2" style="height:320px"></div>
+      </div>
+    </div>
+
+    <!-- TABELAS -->
+    <div x-show="activeTab==='tables'" x-cloak class="tab-content">
+      <h3 class="font-bold text-sm text-amber-400 mb-2">Correntes 101-117</h3>
+      <div class="overflow-x-auto mb-6"><table class="w-full text-xs"><thead><tr class="bg-gray-800 text-gray-400"><th class="px-2 py-1 text-left">#</th><th class="px-2 py-1 text-left">Descricao</th><th class="px-2 py-1 text-right">Massa kg/d</th><th class="px-2 py-1 text-right">ST</th><th class="px-2 py-1 text-right">SV</th><th class="px-2 py-1 text-right">T</th><th class="px-2 py-1">Fase</th><th class="px-2 py-1">Significado</th></tr></thead><tbody>
+        <template x-for="c in correntes" :key="c.id"><tr class="border-b border-gray-800 hover:bg-gray-800/50"><td class="px-2 py-1 font-mono text-amber-400" x-text="c.id"></td><td class="px-2 py-1" x-text="c.desc"></td><td class="px-2 py-1 text-right font-mono" x-text="fmt(c.mass)"></td><td class="px-2 py-1 text-right font-mono" x-text="c.st!=null?fmt(c.st):'-'"></td><td class="px-2 py-1 text-right font-mono" x-text="c.sv!=null?fmt(c.sv):'-'"></td><td class="px-2 py-1 text-right font-mono" x-text="c.temp"></td><td class="px-2 py-1" x-text="c.phase"></td><td class="px-2 py-1 text-gray-500" x-text="c.meaning"></td></tr></template>
+      </tbody></table></div>
+      <h3 class="font-bold text-sm text-amber-400 mb-2">Fechamento elementar</h3>
+      <div class="overflow-x-auto mb-6"><table class="w-full text-xs"><thead><tr class="bg-gray-800 text-gray-400"><th class="px-2 py-1 text-left">Elem.</th><th class="px-2 py-1 text-right">Entrada</th><th class="px-2 py-1 text-right">Biogas</th><th class="px-2 py-1 text-right">Digestato</th><th class="px-2 py-1 text-right">Erro</th><th class="px-2 py-1">Status</th></tr></thead><tbody>
+        <template x-for="e in elemental" :key="e.el"><tr class="border-b border-gray-800"><td class="px-2 py-1 font-bold" x-text="e.el"></td><td class="px-2 py-1 text-right font-mono" x-text="fmt(e.input)"></td><td class="px-2 py-1 text-right font-mono" x-text="fmt(e.gas)"></td><td class="px-2 py-1 text-right font-mono" x-text="fmt(e.dig)"></td><td class="px-2 py-1 text-right font-mono" x-text="e.err.toFixed(6)"></td><td class="px-2 py-1 font-mono" :class="Math.abs(e.err)<0.01?'text-emerald-400':'text-red-400'" x-text="Math.abs(e.err)<0.01?'OK':'REVISAR'"></td></tr></template>
+      </tbody></table></div>
+      <h3 class="font-bold text-sm text-amber-400 mb-2">Equipamentos</h3>
+      <div class="overflow-x-auto mb-6"><table class="w-full text-xs"><thead><tr class="bg-gray-800 text-gray-400"><th class="px-2 py-1 text-left">Tag</th><th class="px-2 py-1 text-left">Nome</th><th class="px-2 py-1 text-right">Dimensao</th><th class="px-2 py-1 text-right">Pot.</th><th class="px-2 py-1">Material</th><th class="px-2 py-1 text-right">FOB R$</th></tr></thead><tbody>
+        <template x-for="eq in equipTable" :key="eq.tag"><tr class="border-b border-gray-800"><td class="px-2 py-1 font-mono text-amber-400" x-text="eq.tag"></td><td class="px-2 py-1" x-text="eq.name"></td><td class="px-2 py-1 text-right font-mono" x-text="eq.dim"></td><td class="px-2 py-1 text-right font-mono" x-text="eq.power"></td><td class="px-2 py-1" x-text="eq.mat"></td><td class="px-2 py-1 text-right font-mono" x-text="fmtMoney(eq.cost)"></td></tr></template>
+      </tbody></table></div>
+      <h3 class="font-bold text-sm text-amber-400 mb-2">CAPEX / OPEX</h3>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="bg-gray-950 rounded-lg p-3"><div class="text-xs text-gray-500">CAPEX total</div><div class="text-lg font-bold text-white" x-text="'R$ '+fmtMoney(m.capex_total)"></div></div>
+        <div class="bg-gray-950 rounded-lg p-3"><div class="text-xs text-gray-500">OPEX anual</div><div class="text-lg font-bold text-white" x-text="'R$ '+fmtMoney(m.opex_anual)"></div></div>
+        <div class="bg-gray-950 rounded-lg p-3"><div class="text-xs text-gray-500">Receita anual</div><div class="text-lg font-bold text-emerald-400" x-text="'R$ '+fmtMoney(m.receita_anual)"></div></div>
+        <div class="bg-gray-950 rounded-lg p-3"><div class="text-xs text-gray-500">Resultado</div><div class="text-lg font-bold" :class="m.resultado_anual>=0?'text-emerald-400':'text-red-400'" x-text="'R$ '+fmtMoney(m.resultado_anual)"></div></div>
+      </div>
+    </div>
+
+    <!-- FORMULARIO / REFERENCIAS -->
+    <div x-show="activeTab==='refs'" x-cloak class="tab-content">
+      <h2 class="text-lg font-bold text-amber-400 mb-3">&#128220; Formulario de Variaveis e Referencias Cientificas</h2>
+      <p class="text-xs text-gray-500 mb-4">Todas as formulas utilizadas no motor de calculo, com faixas tipicas da literatura e referencias bibliograficas.</p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs border-collapse">
+          <thead><tr class="bg-gray-800 text-gray-400 sticky top-0">
+            <th class="px-2 py-1.5 text-left border-b border-gray-700">Categoria</th>
+            <th class="px-2 py-1.5 text-left border-b border-gray-700">Variavel</th>
+            <th class="px-2 py-1.5 text-left border-b border-gray-700">Formula / Definicao</th>
+            <th class="px-2 py-1.5 text-center border-b border-gray-700">Valor base</th>
+            <th class="px-2 py-1.5 text-center border-b border-gray-700">Faixa literatura</th>
+            <th class="px-2 py-1.5 text-left border-b border-gray-700">Referencia</th>
+          </tr></thead>
+          <tbody class="text-gray-300">
+            <template x-for="r in refTable" :key="r.var">
+              <tr class="border-b border-gray-800/50 hover:bg-gray-800/30">
+                <td class="px-2 py-1 text-gray-500" x-text="r.cat"></td>
+                <td class="px-2 py-1 font-mono text-amber-300 font-bold" x-text="r.var"></td>
+                <td class="px-2 py-1 font-mono text-gray-400 text-[11px]" x-text="r.formula"></td>
+                <td class="px-2 py-1 text-center text-white font-mono" x-text="r.base"></td>
+                <td class="px-2 py-1 text-center text-emerald-400 font-mono" x-text="r.range"></td>
+                <td class="px-2 py-1 text-gray-500 text-[10px]" x-text="r.ref"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- OTIMIZACAO -->
+    <div x-show="activeTab==='optim'" x-cloak class="tab-content">
+      <h3 class="font-bold text-sm text-amber-400 mb-3">Cenarios de otimizacao</h3>
+      <div class="flex gap-2 mb-4 flex-wrap">
+        <template x-for="sc in scenarios" :key="sc.name"><button @click="applyScenario(sc)" class="px-3 py-1.5 bg-gray-800 hover:bg-amber-700 text-xs rounded-lg" x-text="sc.name"></button></template>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="bg-gray-800 text-gray-400"><th class="px-2 py-1">Cenario</th><th class="px-2 py-1">xL</th><th class="px-2 py-1">xV</th><th class="px-2 py-1">xR</th><th class="px-2 py-1">C/N</th><th class="px-2 py-1">Biogas</th><th class="px-2 py-1">COV</th></tr></thead><tbody>
+          <template x-for="r in scenarioResults" :key="r.name"><tr class="border-b border-gray-800"><td class="px-2 py-1" x-text="r.name"></td><td class="px-2 py-1 font-mono" x-text="r.xL.toFixed(2)"></td><td class="px-2 py-1 font-mono" x-text="r.xV.toFixed(2)"></td><td class="px-2 py-1 font-mono" x-text="r.xR.toFixed(2)"></td><td class="px-2 py-1 font-mono" :class="r.cn>=20&&r.cn<=30?'text-emerald-400':'text-red-400'" x-text="r.cn.toFixed(1)"></td><td class="px-2 py-1 font-mono" x-text="r.biogas.toFixed(0)+' Nm3/d'"></td><td class="px-2 py-1 font-mono" :class="r.cov>=1&&r.cov<=4?'text-emerald-400':'text-red-400'" x-text="r.cov.toFixed(2)"></td></tr></template>
+        </tbody></table></div>
+        <div id="chart-scenarios" class="bg-gray-950 rounded-lg p-2" style="height:300px"></div>
+      </div>
+      <h3 class="font-bold text-sm text-amber-400 mt-4 mb-2">Sensibilidade 1D</h3>
+      <div class="flex gap-3 mb-3 items-center text-xs">
+        <label class="text-gray-400">X:</label>
+        <select x-model="sensX" @change="renderCharts()" class="bg-gray-800 text-gray-200 rounded px-2 py-1 text-xs border border-gray-700"><template x-for="sv in sensVars" :key="sv.key"><option :value="sv.key" x-text="sv.label"></option></template></select>
+        <label class="text-gray-400">Y:</label>
+        <select x-model="sensY" @change="renderCharts()" class="bg-gray-800 text-gray-200 rounded px-2 py-1 text-xs border border-gray-700"><option value="V_biogas">Biogas</option><option value="V_CH4">CH4</option><option value="E_liq">Eletric.</option><option value="CN">C/N</option><option value="COV">COV</option><option value="vpl">VPL</option></select>
+      </div>
+      <div id="chart-sensib" class="bg-gray-950 rounded-lg p-2" style="height:320px"></div>
+      <h3 class="font-bold text-sm text-amber-400 mt-4 mb-2">Superficie 3D</h3>
+      <div id="chart-3d" class="bg-gray-950 rounded-lg p-2" style="height:450px"></div>
+    </div>
+
+    <!-- ECONOMICO -->
+    <div x-show="activeTab==='econ'" x-cloak class="tab-content">
+      <div class="flex gap-3 mb-3 items-center text-xs no-print">
+        <label class="text-gray-400">Taxa desconto:</label>
+        <input type="range" class="slider-input w-32" min="0.01" max="0.25" step="0.01" x-model.number="taxaDesconto" @input="recalc()">
+        <span class="text-white font-mono" x-text="(taxaDesconto*100).toFixed(0)+'%'"></span>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div id="chart-capex" class="bg-gray-950 rounded-lg p-2" style="height:320px"></div>
+        <div id="chart-opex" class="bg-gray-950 rounded-lg p-2" style="height:320px"></div>
+      </div>
+      <div id="chart-cashflow" class="bg-gray-950 rounded-lg p-2 mb-4" style="height:350px"></div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="bg-gray-950 rounded-lg p-3 text-center"><div class="text-xs text-gray-500" x-text="'VPL (20a, '+(taxaDesconto*100).toFixed(0)+'%)'"></div><div class="text-lg font-bold" :class="m.vpl>=0?'text-emerald-400':'text-red-400'" x-text="'R$ '+fmtMoney(m.vpl)"></div></div>
+        <div class="bg-gray-950 rounded-lg p-3 text-center"><div class="text-xs text-gray-500">TIR</div><div class="text-lg font-bold text-white" x-text="m.tir_str"></div></div>
+        <div class="bg-gray-950 rounded-lg p-3 text-center"><div class="text-xs text-gray-500">Payback</div><div class="text-lg font-bold text-white" x-text="m.payback_str"></div></div>
+        <div class="bg-gray-950 rounded-lg p-3 text-center"><div class="text-xs text-gray-500">Receita/OPEX</div><div class="text-lg font-bold" :class="m.receita_anual/m.opex_anual>=1?'text-emerald-400':'text-amber-400'" x-text="(m.receita_anual/m.opex_anual*100).toFixed(1)+'%'"></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer class="bg-gray-900 border-t border-gray-800 px-4 py-1.5 text-center text-xs text-gray-600">
+  Projetos Industriais II - UFMS - Profa. Janaina - 2026.1 | Atualizado: 26/03/2026 | Refs: Chernicharo (2007), Towler & Sinnott (2012), Perry's 8ed, Metcalf & Eddy 5ed, ISA 5.1, NBR 6493
+</footer>
+
+<script>
+function createModel(p,taxa){const m={};m.V_lodo=p.Q_tot*p.x_lodo;m.V_vinhaca=p.Q_tot*p.x_vinhaca;m.V_residuo=p.Q_tot*p.x_residuo;m.M_lodo=m.V_lodo*p.rho_lodo;m.M_vinhaca=m.V_vinhaca*p.rho_vinhaca;m.M_residuo=m.V_residuo*p.rho_residuo;m.M_total=m.M_lodo+m.M_vinhaca+m.M_residuo;m.ST_lodo=m.M_lodo*p.ST_lodo_pct/100;m.ST_vinhaca=m.M_vinhaca*p.ST_vinhaca_pct/100;m.ST_residuo=m.M_residuo*p.ST_residuo_pct/100;m.ST_total=m.ST_lodo+m.ST_vinhaca+m.ST_residuo;m.SV_lodo=m.ST_lodo*p.SVST_lodo/100;m.SV_vinhaca=m.ST_vinhaca*p.SVST_vinhaca/100;m.SV_residuo=m.ST_residuo*p.SVST_residuo/100;m.SV_total=m.SV_lodo+m.SV_vinhaca+m.SV_residuo;m.CN=(m.SV_lodo*p.CN_lodo+m.SV_vinhaca*p.CN_vinhaca+m.SV_residuo*p.CN_residuo)/m.SV_total;m.SV_removido=m.SV_total*p.eta_SV/100;m.V_biogas=m.SV_removido*p.Y_bg;m.V_CH4=m.V_biogas*p.CH4_pct/100;m.V_CO2=m.V_biogas*p.CO2_pct/100;m.V_outros=m.V_biogas*p.outros_pct/100;m.n_CH4=m.V_CH4/p.Vm;m.m_CH4=m.n_CH4*p.MM_CH4;m.n_CO2=m.V_CO2/p.Vm;m.m_CO2=m.n_CO2*p.MM_CO2;m.n_outros=m.V_outros/p.Vm;m.m_outros=m.n_outros*p.MM_outros;m.M_biogas=m.m_CH4+m.m_CO2+m.m_outros;m.V_reator=p.Q_tot*p.TRH;m.COV=m.SV_total/m.V_reator;m.SV_residual=m.SV_total-m.SV_removido;m.SF=m.ST_total-m.SV_total;m.ST_digestato=m.SV_residual+m.SF;m.M_digestato=m.M_total-m.M_biogas;const el=(sL,sV,sR,pL,pV,pR)=>sL*pL/100+sV*pV/100+sR*pR/100;m.C_in=el(m.SV_lodo,m.SV_vinhaca,m.SV_residuo,p.C_lodo,p.C_vinhaca,p.C_residuo);m.H_in=el(m.SV_lodo,m.SV_vinhaca,m.SV_residuo,p.H_lodo,p.H_vinhaca,p.H_residuo);m.O_in=el(m.SV_lodo,m.SV_vinhaca,m.SV_residuo,p.O_lodo,p.O_vinhaca,p.O_residuo);m.N_in=el(m.SV_lodo,m.SV_vinhaca,m.SV_residuo,p.N_lodo,p.N_vinhaca,p.N_residuo);m.S_in=el(m.SV_lodo,m.SV_vinhaca,m.SV_residuo,p.S_lodo,p.S_vinhaca,p.S_residuo);m.C_gas=m.n_CH4*p.M_C+m.n_CO2*p.M_C;m.H_gas=m.n_CH4*4;m.O_gas=m.n_CO2*32;m.N_gas=0;m.S_gas=0;m.C_dig=m.C_in-m.C_gas;m.H_dig=m.H_in-m.H_gas;m.O_dig=m.O_in-m.O_gas;m.N_dig=m.N_in;m.S_dig=m.S_in;m.CN_elementar=m.C_in/m.N_in;m.Q_aquec=m.M_total*p.Cp*(p.T_dig-p.T_in)/1000;m.Q_perdas=m.Q_aquec*p.perdas_pct/100;m.Q_reacao=p.q_reacao*m.SV_removido;m.Q_demanda=m.Q_aquec+m.Q_perdas-m.Q_reacao;m.E_biogas=m.V_CH4*p.PCI;m.E_el_MJ=m.E_biogas*p.eta_el;m.E_el_kWh=m.E_el_MJ/3.6;m.Q_CHP=m.E_biogas*p.eta_th;m.Q_excedente=m.Q_CHP-m.Q_demanda;m.E_aux=m.E_el_kWh*p.aux_pct;m.E_liq=m.E_el_kWh-m.E_aux;m.P_media=m.E_liq/24;m.dim_TQ101_V=p.Q_tot*0.5*1.2;m.dim_TQ101_D=Math.pow(4*m.dim_TQ101_V/Math.PI,1/3);m.dim_TQ101_pot=0.5*m.dim_TQ101_V;m.dim_D101_V=m.V_reator;m.dim_D101_Vtot=m.V_reator*1.15;m.dim_D101_D=Math.pow(4*m.V_reator/(1.5*Math.PI),1/3);m.dim_D101_Hliq=1.5*m.dim_D101_D;m.dim_D101_Htot=m.dim_D101_Hliq+3;m.dim_D101_pot=0.010*m.V_reator;m.dim_TC101_Q=m.Q_aquec;m.dim_TC101_kW=m.Q_aquec/86.4;const LMTD=(45-30)/Math.log(45/30);m.dim_TC101_LMTD=LMTD;m.dim_TC101_A=(m.dim_TC101_kW*1000)/(800*LMTD)*1.3;m.dim_P101_Q=p.Q_tot/24;m.dim_MG101_comb=m.V_biogas;m.dim_MG101_Eq=m.E_biogas;m.dim_MG101_Pel=m.E_el_MJ/86.4;m.dim_MG101_Pth=m.Q_CHP/86.4;m.dim_TQ102_V=m.V_biogas/24*6;m.dim_DS101_Qh=m.V_biogas/24;m.dim_DS101_Vcarvao=m.dim_DS101_Qh/60*3;m.M_torta=m.ST_digestato/(p.ST_desaguado/100);m.M_filtrado=m.M_digestato-m.M_torta;const fob={TQ101:80000,P101:15000,TC101:50000,D101:2500000,P102:15000,FP101:300000,MG101:600000,TQ102:150000,DS101:40000,TQ103:5000,tub:400000,elet:200000};m.FOB_total=Object.values(fob).reduce((a,b)=>a+b,0);m.capex_instalado=m.FOB_total*3.6;m.capital_giro=m.capex_instalado*0.15;m.capex_total=m.capex_instalado+m.capital_giro;m.fob=fob;m.opex_mdo=4*120000;m.opex_naoh=100*365*4;m.opex_carvao=16*365*15;m.opex_agua=2.6*365*10;m.opex_manut=m.capex_instalado*0.03;m.opex_descarte=m.ST_digestato*365*p.preco_descarte;m.opex_seguro=m.capex_instalado*0.02;m.opex_anual=m.opex_mdo+m.opex_naoh+m.opex_carvao+m.opex_agua+m.opex_manut+m.opex_descarte+m.opex_seguro;m.rec_eletric=m.E_liq*365*p.preco_eletric;m.rec_biofert=m.M_torta*365*0.05;m.rec_carbono=m.V_CH4*365*0.000714*200;m.receita_anual=m.rec_eletric+m.rec_biofert+m.rec_carbono;m.resultado_anual=m.receita_anual-m.opex_anual;const tx=taxa||0.10;m.fluxo_caixa=[];let vplAcum=-m.capex_total;m.fluxo_caixa.push({ano:0,inv:-m.capex_total,rec:0,opex:0,liq:-m.capex_total,desc:-m.capex_total,vplAcum});for(let y=1;y<=20;y++){const liq=m.resultado_anual,desc=liq/Math.pow(1+tx,y);vplAcum+=desc;m.fluxo_caixa.push({ano:y,inv:0,rec:m.receita_anual,opex:m.opex_anual,liq,desc,vplAcum});}m.vpl=vplAcum;m.tir=null;m.tir_str='N/A';if(m.resultado_anual>0){let r=0.05;for(let it=0;it<200;it++){let npv=-m.capex_total,dnpv=0;for(let y=1;y<=20;y++){npv+=m.resultado_anual/Math.pow(1+r,y);dnpv-=y*m.resultado_anual/Math.pow(1+r,y+1);}if(Math.abs(dnpv)<1e-12)break;r-=npv/dnpv;if(Math.abs(npv)<1)break;}if(r>-1&&r<5){m.tir=r;m.tir_str=(r*100).toFixed(2)+'% a.a.';}}if(m.resultado_anual>0){m.payback=m.capex_total/m.resultado_anual;m.payback_str=m.payback.toFixed(1)+' anos';}else{m.payback=Infinity;m.payback_str='Nao se paga';}m.checks=[{name:'Fech. massa',short:'M',ok:Math.abs(m.M_total-m.M_biogas-m.M_digestato)<1},{name:'ST dig.',short:'ST',ok:Math.abs(m.SF+m.SV_residual-m.ST_digestato)<0.01},{name:'C/N 20-30',short:'C/N',ok:m.CN>=20&&m.CN<=30},{name:'COV 1-4',short:'COV',ok:m.COV>=1&&m.COV<=4},{name:'Autossuf. Q',short:'Q',ok:m.Q_excedente>=0},{name:'Bg=100%',short:'%bg',ok:Math.abs(p.CH4_pct+p.CO2_pct+p.outros_pct-100)<0.01},{name:'eL=100%',short:'eL',ok:Math.abs(p.C_lodo+p.H_lodo+p.O_lodo+p.N_lodo+p.S_lodo-100)<0.1},{name:'eV=100%',short:'eV',ok:Math.abs(p.C_vinhaca+p.H_vinhaca+p.O_vinhaca+p.N_vinhaca+p.S_vinhaca-100)<0.1},{name:'eR>=95%',short:'eR',ok:(p.C_residuo+p.H_residuo+p.O_residuo+p.N_residuo+p.S_residuo)>=95},{name:'xS=1',short:'xS',ok:Math.abs(p.x_lodo+p.x_vinhaca+p.x_residuo-1)<0.001}];m.checksOk=m.checks.filter(c=>c.ok).length;return m;}
+function defaultParams(){return{Q_tot:100,x_lodo:0.50,x_vinhaca:0.30,x_residuo:0.20,rho_lodo:1020,rho_vinhaca:1009,rho_residuo:1050,ST_lodo_pct:3.5,ST_vinhaca_pct:1.7,ST_residuo_pct:20.0,SVST_lodo:65,SVST_vinhaca:75,SVST_residuo:85,CN_lodo:8,CN_vinhaca:25,CN_residuo:30,C_lodo:51.0,H_lodo:7.9,O_lodo:34.6,N_lodo:5.4,S_lodo:1.1,C_vinhaca:43.0,H_vinhaca:6.5,O_vinhaca:46.0,N_vinhaca:3.5,S_vinhaca:1.0,C_residuo:48.0,H_residuo:6.4,O_residuo:42.0,N_residuo:3.2,S_residuo:0.4,T_in:20,T_dig:35,TRH:20,eta_SV:55,Y_bg:0.60,CH4_pct:62,CO2_pct:36,outros_pct:2,Cp:4.0,perdas_pct:15,PCI:35.8,eta_el:0.38,eta_th:0.42,aux_pct:0.05,q_reacao:1.2,preco_eletric:0.75,preco_descarte:0.30,ST_desaguado:25,MM_CH4:16,MM_CO2:44,MM_H2O:18,M_C:12,Vm:22.414,MM_outros:29};}
+function drawPFD(svg,m,onClickEquip){svg.innerHTML='';const ns='http://www.w3.org/2000/svg';const ce=t=>document.createElementNS(ns,t);const setA=(el,a)=>{for(const[k,v]of Object.entries(a))el.setAttribute(k,v);return el;};const defs=ce('defs');const mkr=(id,c)=>{const mk=setA(ce('marker'),{id,viewBox:'0 0 10 7',refX:'10',refY:'3.5',markerWidth:'8',markerHeight:'6',orient:'auto-start-reverse'});mk.appendChild(setA(ce('polygon'),{points:'0 0,10 3.5,0 7',fill:c}));return mk;};['brown:#92400e','yellow:#ca8a04','green:#059669','gray:#6b7280','blue:#3b82f6','red:#ef4444','pink:#831843'].forEach(s=>{const[n,c]=s.split(':');defs.appendChild(mkr('arr-'+n,c));});svg.appendChild(defs);for(let x=0;x<1100;x+=50)svg.appendChild(setA(ce('line'),{x1:x,y1:0,x2:x,y2:600,stroke:'#1e293b','stroke-width':'0.5'}));for(let y=0;y<600;y+=50)svg.appendChild(setA(ce('line'),{x1:0,y1:y,x2:1100,y2:y,stroke:'#1e293b','stroke-width':'0.5'}));const equips=[{tag:'TQ-101',x:80,y:250,w:80,h:90,color:'#334155',label:'Tanque\nMistura'},{tag:'P-101',x:220,y:280,w:40,h:40,color:'#475569',label:'Bomba',shape:'circle'},{tag:'TC-101',x:320,y:250,w:70,h:80,color:'#7c3aed',label:'Trocador\nCalor'},{tag:'D-101',x:480,y:180,w:120,h:200,color:'#065f46',label:'Digestor\nAnaerobio'},{tag:'TQ-102',x:700,y:80,w:70,h:70,color:'#854d0e',label:'Gasometro'},{tag:'DS-101',x:820,y:80,w:60,h:70,color:'#7c3aed',label:'Dessulf.'},{tag:'MG-101',x:940,y:80,w:80,h:70,color:'#b45309',label:'CHP\nMotor-Ger'},{tag:'P-102',x:650,y:420,w:40,h:40,color:'#475569',label:'Bomba',shape:'circle'},{tag:'FP-101',x:780,y:400,w:80,h:80,color:'#1e3a5f',label:'Filtro\nPrensa'},{tag:'TQ-103',x:380,y:420,w:50,h:50,color:'#831843',label:'NaOH'}];const arrC=c=>c==='#92400e'?'brown':c==='#ca8a04'?'yellow':c==='#059669'?'green':c==='#3b82f6'?'blue':c==='#ef4444'?'red':c==='#831843'?'pink':'gray';const conns=[{pts:[[20,270],[80,270]],color:'#92400e',label:'101 Lodo',cls:'flow-line'},{pts:[[20,220],[60,220],[60,290],[80,290]],color:'#92400e',label:'102 Vinhaca',cls:'flow-line'},{pts:[[20,340],[60,340],[60,310],[80,310]],color:'#92400e',label:'103 Residuo',cls:'flow-line'},{pts:[[160,290],[220,290]],color:'#92400e',label:'104',cls:'flow-line'},{pts:[[260,290],[320,290]],color:'#92400e',label:'105',cls:'flow-line'},{pts:[[390,290],[480,290]],color:'#059669',label:'106',cls:'flow-line'},{pts:[[540,180],[540,110],[700,110]],color:'#ca8a04',label:'107 Biogas',cls:'flow-line-gas'},{pts:[[770,110],[820,110]],color:'#ca8a04',label:'108',cls:'flow-line-gas'},{pts:[[880,110],[940,110]],color:'#ca8a04',label:'',cls:'flow-line-gas'},{pts:[[540,380],[540,440],[650,440]],color:'#6b7280',label:'109 Digestato',cls:'flow-line'},{pts:[[690,440],[780,440]],color:'#6b7280',label:'110',cls:'flow-line'},{pts:[[860,420],[920,420],[920,500]],color:'#6b7280',label:'111 Torta',cls:'flow-line'},{pts:[[860,460],[960,460],[960,500]],color:'#3b82f6',label:'112 Filtrado',cls:'flow-line'},{pts:[[430,445],[480,340]],color:'#831843',label:'115 NaOH',cls:'flow-line'},{pts:[[1020,110],[1060,110],[1060,30]],color:'#ca8a04',label:'116 Eletric.',cls:'flow-line-gas'},{pts:[[980,150],[980,200],[680,200],[680,290],[390,290]],color:'#ef4444',label:'117 Calor',cls:'flow-line'}];conns.forEach(c=>{if(!c.pts||c.pts.length<2)return;let d='M'+c.pts[0].join(',');for(let i=1;i<c.pts.length;i++)d+=' L'+c.pts[i].join(',');svg.appendChild(setA(ce('path'),{d,fill:'none',stroke:c.color,'stroke-width':'2.5',class:c.cls,'marker-end':'url(#arr-'+arrC(c.color)+')'}));if(c.label){const mx=(c.pts[0][0]+c.pts[c.pts.length-1][0])/2,my=(c.pts[0][1]+c.pts[c.pts.length-1][1])/2-10;const t=setA(ce('text'),{x:mx,y:my,fill:'#cbd5e1','font-size':'11','text-anchor':'middle','font-weight':'600','font-family':'Consolas'});t.textContent=c.label;svg.appendChild(t);}});equips.forEach(eq=>{const g=setA(ce('g'),{class:'equip','data-tag':eq.tag});g.addEventListener('click',()=>onClickEquip(eq.tag));if(eq.shape==='circle'){const r=eq.w/2;g.appendChild(setA(ce('circle'),{cx:eq.x+r,cy:eq.y+r,r,fill:eq.color,stroke:'#e2e8f0','stroke-width':'2'}));g.appendChild(setA(ce('polygon'),{points:`${eq.x+8},${eq.y+8} ${eq.x+eq.w-8},${eq.y+eq.w/2} ${eq.x+8},${eq.y+eq.w-8}`,fill:'none',stroke:'#e2e8f0','stroke-width':'1.5'}));}else{g.appendChild(setA(ce('rect'),{x:eq.x,y:eq.y,width:eq.w,height:eq.h,rx:'6',fill:eq.color,stroke:'#e2e8f0','stroke-width':'2'}));if(eq.tag==='D-101'){g.appendChild(setA(ce('line'),{x1:eq.x+eq.w/2,y1:eq.y+20,x2:eq.x+eq.w/2,y2:eq.y+eq.h-30,stroke:'#e2e8f0','stroke-width':'1.5'}));g.appendChild(setA(ce('line'),{x1:eq.x+eq.w/2-20,y1:eq.y+eq.h/2,x2:eq.x+eq.w/2+20,y2:eq.y+eq.h/2,stroke:'#e2e8f0','stroke-width':'2'}));}}const tag=setA(ce('text'),{x:eq.x+eq.w/2,y:eq.y-8,fill:'#fbbf24','font-size':'12','text-anchor':'middle','font-weight':'bold','font-family':'Consolas'});tag.textContent=eq.tag;g.appendChild(tag);eq.label.split('\n').forEach((ln,i,a)=>{const t=setA(ce('text'),{x:eq.x+eq.w/2,y:eq.y+eq.h/2-((a.length-1)*7)+i*15,fill:'#e2e8f0','font-size':'11','text-anchor':'middle','font-weight':'600','font-family':'system-ui'});t.textContent=ln;g.appendChild(t);});svg.appendChild(g);});[{x:18,y:258,t:Math.round(m.M_lodo)+' kg/d'},{x:18,y:208,t:Math.round(m.M_vinhaca)+' kg/d'},{x:18,y:354,t:Math.round(m.M_residuo)+' kg/d'},{x:615,y:96,t:Math.round(m.M_biogas)+' kg/d biogas'},{x:615,y:428,t:Math.round(m.M_digestato)+' kg/d dig.'},{x:1030,y:20,t:Math.round(m.E_liq)+' kWh/d'},{x:910,y:518,t:Math.round(m.M_torta)+' kg/d torta'}].forEach(ml=>{svg.appendChild(setA(ce('rect'),{x:ml.x-3,y:ml.y-12,width:ml.t.length*7.2+8,height:17,rx:'3',fill:'#0f172a',opacity:'0.9',stroke:'#334155','stroke-width':'0.5'}));const t=setA(ce('text'),{x:ml.x+2,y:ml.y+1,fill:'#fbbf24','font-size':'11','font-weight':'600','font-family':'Consolas'});t.textContent=ml.t;svg.appendChild(t);});}
+function app(){return{
+  activeTab:'pfd',lightMode:false,sidebarOpen:false,taxaDesconto:0.10,sensX:'TRH',sensY:'V_biogas',activeScenario:0,
+  tabs:[{id:'pfd',name:'PFD Interativo',icon:'\u{1F3ED}'},{id:'charts',name:'Graficos',icon:'\u{1F4CA}'},{id:'tables',name:'Tabelas',icon:'\u{1F4CB}'},{id:'refs',name:'Formulario',icon:'\u{1F4D0}'},{id:'optim',name:'Otimizacao',icon:'\u2699'},{id:'econ',name:'Economico',icon:'\u{1F4B0}'},{id:'guide',name:'Guia',icon:'\u{1F4D6}'}],
+  sensVars:[{key:'TRH',label:'TRH (dias)',min:10,max:40,step:1},{key:'eta_SV',label:'eta_SV (%)',min:30,max:80,step:1},{key:'Y_bg',label:'Y_bg (Nm3/kgSV)',min:0.3,max:1.0,step:0.05},{key:'x_residuo',label:'% Residuo',min:0.05,max:0.60,step:0.05},{key:'T_dig',label:'T dig (degC)',min:30,max:60,step:1},{key:'Q_tot',label:'Q tot (m3/d)',min:50,max:300,step:10}],
+  m:{},p:defaultParams(),sliders:[],kpis:[],checks:[],checksOk:0,correntes:[],elemental:[],equipTable:[],selectedEquip:null,refTable:[],
+  scenarios:[{name:'A - Base',xL:0.50,xV:0.30,xR:0.20},{name:'B - +Lodo',xL:0.60,xV:0.20,xR:0.20},{name:'C - +Residuo',xL:0.40,xV:0.20,xR:0.40},{name:'D - +Vinhaca',xL:0.40,xV:0.40,xR:0.20},{name:'E - Max bg',xL:0.30,xV:0.30,xR:0.40}],scenarioResults:[],
+  savedScenarios:[
+    {name:'1: Base',p:defaultParams(),taxa:0.10},
+    {name:'2: +Escala+Res',p:{...defaultParams(),Q_tot:200,x_lodo:0.35,x_vinhaca:0.25,x_residuo:0.40,eta_SV:60,Y_bg:0.70},taxa:0.10},
+    {name:'3: +Tarifa+BNDES',p:{...defaultParams(),Q_tot:200,x_lodo:0.35,x_vinhaca:0.25,x_residuo:0.40,eta_SV:60,Y_bg:0.70,preco_eletric:1.50},taxa:0.06}
+  ],
+  init(){
+    const ir={Q_tot:[80,200],x_lodo:[0.3,0.6],x_vinhaca:[0.1,0.4],x_residuo:[0.1,0.4],TRH:[15,25],T_dig:[33,37],eta_SV:[45,65],Y_bg:[0.45,0.75],preco_eletric:[0.50,2.00],preco_descarte:[0.15,0.50]};
+    this.sliders=[
+      {id:'Q_tot',label:'Q total',val:this.p.Q_tot,min:50,max:300,step:10,dec:0,unit:'m3/d',key:'Q_tot'},
+      {id:'x_lodo',label:'Frac. lodo',val:this.p.x_lodo,min:0.1,max:0.8,step:0.05,dec:2,unit:'',key:'x_lodo'},
+      {id:'x_vinhaca',label:'Frac. vinhaca',val:this.p.x_vinhaca,min:0.0,max:0.6,step:0.05,dec:2,unit:'',key:'x_vinhaca'},
+      {id:'x_residuo',label:'Frac. residuo',val:this.p.x_residuo,min:0.0,max:0.6,step:0.05,dec:2,unit:'',key:'x_residuo'},
+      {id:'TRH',label:'TRH',val:this.p.TRH,min:10,max:40,step:1,dec:0,unit:'d',key:'TRH'},
+      {id:'T_dig',label:'T dig.',val:this.p.T_dig,min:30,max:60,step:1,dec:0,unit:'C',key:'T_dig'},
+      {id:'eta_SV',label:'eta SV',val:this.p.eta_SV,min:30,max:80,step:1,dec:0,unit:'%',key:'eta_SV'},
+      {id:'Y_bg',label:'Rend. bg',val:this.p.Y_bg,min:0.30,max:1.00,step:0.05,dec:2,unit:'Nm3/kgSV',key:'Y_bg'},
+      {id:'preco_eletric',label:'Preco elet.',val:this.p.preco_eletric,min:0.30,max:3.00,step:0.05,dec:2,unit:'R$/kWh',key:'preco_eletric'},
+      {id:'preco_descarte',label:'Preco desc.',val:this.p.preco_descarte,min:0.10,max:1.00,step:0.05,dec:2,unit:'R$/kgST',key:'preco_descarte'},
+    ].map(s=>{const r=ir[s.key]||[s.min,s.max];const rng=s.max-s.min;s.idealLeft=((r[0]-s.min)/rng)*100;s.idealWidth=((r[1]-r[0])/rng)*100;return s;});
+    this.buildRefTable();this.recalc();
+    this.$watch('activeTab',()=>{this.$nextTick(()=>this.renderCharts());});
+  },
+  loadScenario(i){this.activeScenario=i;const sc=this.savedScenarios[i];this.p={...sc.p};this.taxaDesconto=sc.taxa;this.sliders.forEach(s=>{s.val=this.p[s.key];});this.recalc();},
+  saveCurrentToScenario(){const i=this.activeScenario;this.savedScenarios[i].p={...this.p};this.savedScenarios[i].taxa=this.taxaDesconto;},
+  recalc(){this.sliders.forEach(s=>{this.p[s.key]=s.val;});const sum=this.p.x_lodo+this.p.x_vinhaca+this.p.x_residuo;if(Math.abs(sum-1)>0.001){this.p.x_residuo=Math.max(0,1-this.p.x_lodo-this.p.x_vinhaca);const rs=this.sliders.find(s=>s.key==='x_residuo');if(rs)rs.val=this.p.x_residuo;}this.m=createModel(this.p,this.taxaDesconto);this.checks=this.m.checks;this.checksOk=this.m.checksOk;this.updateKPIs();this.updateCorrentes();this.updateElemental();this.updateEquipTable();this.computeScenarios();this.$nextTick(()=>{const svg=document.getElementById('pfd-svg');if(svg)drawPFD(svg,this.m,t=>this.selectEquip(t));this.renderCharts();});},
+  resetDefaults(){this.p=defaultParams();this.taxaDesconto=0.10;this.sliders.forEach(s=>{s.val=this.p[s.key];});this.recalc();},
+  updateKPIs(){const m=this.m;const fN=v=>String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g,'.');this.kpis=[
+    {label:'Biogas',display:fN(m.V_biogas),unit:'Nm3/dia',alert:false,explain:'Volume total de biogas.',formula:'V=SV_rem*Y_bg',range:'Escala'},
+    {label:'CH4',display:fN(m.V_CH4),unit:'Nm3/dia',alert:false,explain:'Metano combustivel (~62%).',formula:'V_CH4=V_bg*%CH4',range:'60-70%'},
+    {label:'C/N',display:m.CN.toFixed(1),unit:'ideal 20-30',alert:m.CN<20||m.CN>30,explain:'C/N da mistura.',formula:'SUM(SV*CN)/SV_tot',range:'20-30'},
+    {label:'COV',display:m.COV.toFixed(2),unit:'kgSV/m3.d',alert:m.COV<1||m.COV>4,explain:'Carga organica.',formula:'SV/V_reator',range:'1-4'},
+    {label:'E.liq',display:fN(m.E_liq),unit:'kWh/d',alert:false,explain:'Eletric. liquida.',formula:'E*(1-aux)',range:'-'},
+    {label:'Pot.',display:m.P_media.toFixed(1),unit:'kW',alert:false,explain:'Pot. media 24h.',formula:'E_liq/24',range:'-'},
+    {label:'Dig.',display:fN(m.M_digestato),unit:'kg/d',alert:false,explain:'Digestato.',formula:'M_in-M_bg',range:'~98%'},
+    {label:'VPL',display:'R$'+fN(m.vpl/1000)+'k',unit:'20a',alert:m.vpl<0,explain:'Valor Presente Liq.',formula:'-CAPEX+SUM(FC/(1+i)^t)',range:'>0'},
+  ];},
+  updateCorrentes(){const m=this.m,p=this.p;this.correntes=[{id:101,desc:'Lodo',mass:m.M_lodo,st:m.ST_lodo,sv:m.SV_lodo,temp:p.T_in,phase:'Liq/pasta',meaning:'Entrada lodo; N e alcalinidade'},{id:102,desc:'Vinhaca',mass:m.M_vinhaca,st:m.ST_vinhaca,sv:m.SV_vinhaca,temp:p.T_in,phase:'Liquido',meaning:'Rica em C, pH acido'},{id:103,desc:'Residuo org.',mass:m.M_residuo,st:m.ST_residuo,sv:m.SV_residuo,temp:p.T_in,phase:'Pasta',meaning:'Alto SV, eleva C/N'},{id:104,desc:'Mistura',mass:m.M_total,st:m.ST_total,sv:m.SV_total,temp:p.T_in,phase:'Liq/pasta',meaning:'Saida TQ-101'},{id:105,desc:'Bombeada',mass:m.M_total,st:m.ST_total,sv:m.SV_total,temp:p.T_in,phase:'Liq/pasta',meaning:'Apos P-101'},{id:106,desc:'Aquecida',mass:m.M_total,st:m.ST_total,sv:m.SV_total,temp:p.T_dig,phase:'Liq/pasta',meaning:'Saida TC-101'},{id:107,desc:'Biogas bruto',mass:m.M_biogas,st:null,sv:null,temp:p.T_dig,phase:'Gas',meaning:'Topo D-101'},{id:108,desc:'Biogas tratado',mass:m.M_biogas*0.99,st:null,sv:null,temp:p.T_dig,phase:'Gas',meaning:'Apos DS-101'},{id:109,desc:'Digestato bruto',mass:m.M_digestato,st:m.ST_digestato,sv:m.SV_residual,temp:p.T_dig,phase:'Liq/pasta',meaning:'Fundo D-101'},{id:110,desc:'Dig. bombeado',mass:m.M_digestato,st:m.ST_digestato,sv:m.SV_residual,temp:p.T_dig,phase:'Liq/pasta',meaning:'Apos P-102'},{id:111,desc:'Torta',mass:m.M_torta,st:m.ST_digestato,sv:m.SV_residual,temp:30,phase:'Sol.',meaning:'FP-101 a 25%ST'},{id:112,desc:'Filtrado',mass:m.M_filtrado,st:0,sv:0,temp:30,phase:'Liq.',meaning:'Agua do FP-101'},{id:113,desc:'Agua quente',mass:null,st:null,sv:null,temp:80,phase:'Liq.',meaning:'Utilidade CHP->TC-101'},{id:114,desc:'Agua retorno',mass:null,st:null,sv:null,temp:50,phase:'Liq.',meaning:'TC-101->CHP'},{id:115,desc:'NaOH',mass:100,st:null,sv:null,temp:p.T_in,phase:'Liq.',meaning:'Correcao pH 6.8-7.4'},{id:116,desc:'Eletricidade',mass:null,st:null,sv:null,temp:'-',phase:'-',meaning:Math.round(m.E_liq)+' kWh/d'},{id:117,desc:'Calor',mass:null,st:null,sv:null,temp:'-',phase:'-',meaning:Math.round(m.Q_CHP)+' MJ/d'}];},
+  updateElemental(){const m=this.m;this.elemental=[{el:'C',input:m.C_in,gas:m.C_gas,dig:m.C_dig,err:m.C_in-m.C_gas-m.C_dig},{el:'H',input:m.H_in,gas:m.H_gas,dig:m.H_dig,err:m.H_in-m.H_gas-m.H_dig},{el:'O',input:m.O_in,gas:m.O_gas,dig:m.O_dig,err:m.O_in-m.O_gas-m.O_dig},{el:'N',input:m.N_in,gas:m.N_gas,dig:m.N_dig,err:m.N_in-m.N_gas-m.N_dig},{el:'S',input:m.S_in,gas:m.S_gas,dig:m.S_dig,err:m.S_in-m.S_gas-m.S_dig}];},
+  updateEquipTable(){const m=this.m;this.equipTable=[{tag:'TQ-101',name:'Tanque mistura',dim:m.dim_TQ101_V.toFixed(0)+' m3',power:m.dim_TQ101_pot.toFixed(0)+' kW',mat:'Aco+epoxi',cost:80000},{tag:'D-101',name:'Digestor',dim:m.dim_D101_Vtot.toFixed(0)+' m3, D='+m.dim_D101_D.toFixed(1)+'m',power:m.dim_D101_pot.toFixed(0)+' kW',mat:'A516+epoxi/316L',cost:2500000},{tag:'TC-101',name:'Trocador calor',dim:m.dim_TC101_A.toFixed(1)+' m2',power:m.dim_TC101_kW.toFixed(1)+' kW',mat:'316L/AC',cost:50000},{tag:'P-101',name:'Bomba alim.',dim:m.dim_P101_Q.toFixed(1)+' m3/h',power:'0.75 kW',mat:'FF/316L',cost:15000},{tag:'P-102',name:'Bomba dig.',dim:(m.M_digestato/1010/24).toFixed(1)+' m3/h',power:'0.75 kW',mat:'FF/316L',cost:15000},{tag:'FP-101',name:'Filtro-prensa',dim:'100 m2',power:'5 kW',mat:'PP/AC',cost:300000},{tag:'MG-101',name:'CHP',dim:'200kW nom.',power:m.dim_MG101_Pel.toFixed(0)+' kW el',mat:'Fabricante',cost:600000},{tag:'TQ-102',name:'Gasometro',dim:m.dim_TQ102_V.toFixed(0)+' Nm3',power:'-',mat:'EPDM',cost:150000},{tag:'DS-101',name:'Dessulf.',dim:m.dim_DS101_Vcarvao.toFixed(1)+' m3',power:'-',mat:'PRFV',cost:40000},{tag:'TQ-103',name:'Tanque NaOH',dim:'2 m3',power:'-',mat:'PEAD',cost:5000}];},
+  selectEquip(tag){const m=this.m,p=this.p;const info={'TQ-101':{tag:'TQ-101',name:'Tanque Mistura',func:'Homogeneizar substratos.',dims:[['Volume',m.dim_TQ101_V.toFixed(0)+' m3'],['D',m.dim_TQ101_D.toFixed(2)+' m'],['Pot.',m.dim_TQ101_pot.toFixed(0)+' kW']],material:'Aco A36+epoxi',norma:'NBR 7821',formulas:'V=Q*0.5*1.2\nD=(4V/pi)^(1/3)'},'P-101':{tag:'P-101',name:'Bomba Alim.',func:'Bombear mistura.',dims:[['Q',m.dim_P101_Q.toFixed(2)+' m3/h'],['W','0.75 kW']],material:'FF/316L',norma:'API 610',formulas:'Q=Q_tot/24'},'TC-101':{tag:'TC-101',name:'Trocador Calor',func:'Aquecer '+p.T_in+' a '+p.T_dig+'C.',dims:[['Q',m.dim_TC101_kW.toFixed(1)+' kW'],['LMTD',m.dim_TC101_LMTD.toFixed(1)+' C'],['A',m.dim_TC101_A.toFixed(2)+' m2']],material:'316L/AC',norma:'TEMA',formulas:'Q=M*Cp*dT/1000\nA=Q/(U*LMTD)*1.3'},'D-101':{tag:'D-101',name:'Digestor CSTR',func:'Digestao anaerobia.',dims:[['V util',m.dim_D101_V.toFixed(0)+' m3'],['V tot',m.dim_D101_Vtot.toFixed(0)+' m3'],['D',m.dim_D101_D.toFixed(2)+' m'],['H',m.dim_D101_Htot.toFixed(1)+' m'],['COV',m.COV.toFixed(2)]],material:'A516+epoxi+316L',norma:'ASME VIII / NACE MR0175',formulas:'V=Q*TRH\nD=(4V/1.5pi)^(1/3)\nH=1.5D'},'P-102':{tag:'P-102',name:'Bomba Dig.',func:'Bombear digestato.',dims:[['Q',(m.M_digestato/1010/24).toFixed(2)+' m3/h']],material:'FF/316L',norma:'API 610',formulas:'Q=M/(rho*24)'},'FP-101':{tag:'FP-101',name:'Filtro-Prensa',func:'Desaguar a 25%ST.',dims:[['Cap.',Math.round(m.M_digestato)+' kg/d'],['A','100 m2'],['Torta',Math.round(m.M_torta)+' kg/d']],material:'PP/AC',norma:'NBR 7821',formulas:'M_torta=ST/(25/100)'},'MG-101':{tag:'MG-101',name:'CHP Motor-Ger',func:'Biogas -> eletric.+calor.',dims:[['Comb.',m.dim_MG101_comb.toFixed(0)+' Nm3/d'],['P.el',m.dim_MG101_Pel.toFixed(1)+' kW'],['P.th',m.dim_MG101_Pth.toFixed(1)+' kW']],material:'Fabricante',norma:'ISO 3046',formulas:'E=V_CH4*PCI\nP_el=E*eta_el/86.4'},'TQ-102':{tag:'TQ-102',name:'Gasometro',func:'Buffer de biogas.',dims:[['V',m.dim_TQ102_V.toFixed(0)+' Nm3']],material:'EPDM/aco',norma:'NR-20',formulas:'V=Q_bg/24*6'},'DS-101':{tag:'DS-101',name:'Dessulfurizador',func:'Remover H2S.',dims:[['Q',m.dim_DS101_Qh.toFixed(1)+' Nm3/h'],['V carv.',m.dim_DS101_Vcarvao.toFixed(2)+' m3']],material:'PRFV+carvao',norma:'ASTM D3299',formulas:'V=Q/60*EBCT'},'TQ-103':{tag:'TQ-103',name:'Tanque NaOH',func:'NaOH 50% para pH.',dims:[['V','2 m3']],material:'PEAD',norma:'ASTM D1998',formulas:'Reserva 7-14d'}};this.selectedEquip=info[tag]||null;},
+  computeScenarios(){this.scenarioResults=this.scenarios.map(sc=>{const pp={...this.p,x_lodo:sc.xL,x_vinhaca:sc.xV,x_residuo:sc.xR};const mm=createModel(pp,this.taxaDesconto);return{name:sc.name,xL:sc.xL,xV:sc.xV,xR:sc.xR,cn:mm.CN,biogas:mm.V_biogas,cov:mm.COV};});},
+  applyScenario(sc){this.p.x_lodo=sc.xL;this.p.x_vinhaca=sc.xV;this.p.x_residuo=sc.xR;this.sliders.find(s=>s.key==='x_lodo').val=sc.xL;this.sliders.find(s=>s.key==='x_vinhaca').val=sc.xV;this.sliders.find(s=>s.key==='x_residuo').val=sc.xR;this.recalc();},
+  buildRefTable(){this.refTable=[
+    {cat:'Substrato',var:'rho_lodo',formula:'Densidade lodo esgoto',base:'1020 kg/m3',range:'1010-1030',ref:'Metcalf & Eddy, Wastewater Eng., 5ed, 2014, Tab.14-8'},
+    {cat:'Substrato',var:'rho_vinhaca',formula:'Densidade vinhaca',base:'1009 kg/m3',range:'1005-1020',ref:'Rodrigues & Pinto, Vinhaca: Alternativas, UNESP, 2016'},
+    {cat:'Substrato',var:'rho_residuo',formula:'Densidade residuo organico',base:'1050 kg/m3',range:'1020-1100',ref:'Tchobanoglous et al., Solid Waste Mgmt, 1993'},
+    {cat:'Substrato',var:'ST_lodo',formula:'Solidos totais do lodo',base:'3.5%',range:'2-6%',ref:'Metcalf & Eddy, 2014, Tab.14-6'},
+    {cat:'Substrato',var:'ST_vinhaca',formula:'Solidos totais da vinhaca',base:'1.7%',range:'1-4%',ref:'Wilkie et al., Biomass & Bioenergy 19, 2000'},
+    {cat:'Substrato',var:'ST_residuo',formula:'Solidos totais do residuo org.',base:'20%',range:'15-30%',ref:'Zhang et al., Renewable Energy 32, 2007'},
+    {cat:'Substrato',var:'SV/ST',formula:'Relacao solidos volateis / totais',base:'65-85%',range:'60-90%',ref:'Chernicharo, Reatores Anaerobios, 2007, Cap.3'},
+    {cat:'Substrato',var:'C/N lodo',formula:'Relacao C/N do lodo',base:'8',range:'5-12',ref:'Metcalf & Eddy, 2014; Appels et al., 2008'},
+    {cat:'Substrato',var:'C/N vinhaca',formula:'Relacao C/N da vinhaca',base:'25',range:'20-35',ref:'Wilkie et al., 2000; CETESB'},
+    {cat:'Substrato',var:'C/N residuo',formula:'Relacao C/N do residuo organico',base:'30',range:'20-40',ref:'Zhang et al., 2007; Li et al., 2011'},
+    {cat:'Digestao',var:'C/N mistura',formula:'SUM(SV_i * CN_i) / SV_total',base:'24.6',range:'20-30 ideal',ref:'Chernicharo, 2007; Mata-Alvarez et al., Bioresource Tech 74, 2000'},
+    {cat:'Digestao',var:'TRH',formula:'V_reator / Q_alimentacao',base:'20 dias',range:'15-25 (meso.)',ref:'Metcalf & Eddy, 2014, Tab.14-12; Chernicharo, 2007'},
+    {cat:'Digestao',var:'COV',formula:'SV_total / V_reator',base:'2.56 kgSV/m3.d',range:'1-4',ref:'Chernicharo, 2007, Tab.3.4; Appels et al., 2008'},
+    {cat:'Digestao',var:'T_digestor',formula:'Temperatura operacional',base:'35 degC',range:'33-37 meso.',ref:'Appels et al., Prog. Energy Combust. Sci. 34, 2008'},
+    {cat:'Digestao',var:'eta_SV',formula:'Efic. remocao SV = SV_rem/SV_in',base:'55%',range:'40-65%',ref:'Metcalf & Eddy, 2014, Fig.14-12'},
+    {cat:'Biogas',var:'Y_bg',formula:'V_biogas / SV_removido',base:'0.60 Nm3/kgSV',range:'0.4-0.8',ref:'Chernicharo, 2007; Buswell & Mueller, 1952 (eq. estequiom.)'},
+    {cat:'Biogas',var:'CH4%',formula:'Fracao volumetrica de CH4 no biogas',base:'62%',range:'50-70%',ref:'Metcalf & Eddy, 2014, Tab.14-14'},
+    {cat:'Biogas',var:'CO2%',formula:'Fracao volumetrica de CO2',base:'36%',range:'30-50%',ref:'Metcalf & Eddy, 2014'},
+    {cat:'Biogas',var:'PCI_CH4',formula:'Poder calorifico inferior do CH4',base:'35.8 MJ/Nm3',range:'35.7-36.0',ref:'Perry\'s Chemical Eng. Handbook, 8ed, Tab.2-186'},
+    {cat:'Biogas',var:'Vm',formula:'Vol. molar CNTP (0C, 1atm)',base:'22.414 L/mol',range:'Constante',ref:'Lei dos gases ideais; IUPAC'},
+    {cat:'Energia',var:'Cp_mistura',formula:'Calor especifico da mistura aquosa',base:'4.0 kJ/kg.K',range:'3.8-4.2',ref:'Perry\'s, Tab.2-140 (agua+solidos diluidos)'},
+    {cat:'Energia',var:'Q_reacao',formula:'Calor exotermico da digestao',base:'1.2 MJ/kgSV',range:'0.8-1.5',ref:'Metcalf & Eddy, 2014; Rittmann & McCarty, 2001'},
+    {cat:'Energia',var:'Perdas_term',formula:'Perdas termicas do digestor',base:'15%',range:'10-20%',ref:'Chernicharo, 2007; estimativa para isolamento tipico'},
+    {cat:'CHP',var:'eta_eletrica',formula:'Efic. eletrica do motor a gas',base:'38%',range:'33-42%',ref:'Weiland, Appl. Microbiol. Biotechnol. 85, 2010'},
+    {cat:'CHP',var:'eta_termica',formula:'Efic. de recuperacao termica',base:'42%',range:'38-48%',ref:'Weiland, 2010; Caterpillar G3520 datasheet'},
+    {cat:'CHP',var:'aux_pct',formula:'Consumo auxiliar (bombas, agitador)',base:'5%',range:'3-8%',ref:'Towler & Sinnott, Chem. Eng. Design, 2012'},
+    {cat:'Trocador',var:'U_global',formula:'Coeficiente global de transf. calor',base:'800 W/m2.K',range:'500-1200',ref:'Perry\'s, Tab.11-5 (liquido-liquido)'},
+    {cat:'Trocador',var:'LMTD',formula:'(DT1-DT2)/ln(DT1/DT2)',base:'37.1 degC',range:'Calculado',ref:'Incropera & DeWitt, Fund. Heat Transfer, 7ed'},
+    {cat:'Digestor',var:'H/D',formula:'Relacao altura/diametro do CSTR',base:'1.5',range:'1.2-2.0',ref:'Chernicharo, 2007; WEF MOP 8'},
+    {cat:'Digestor',var:'f_headspace',formula:'Frac. headspace (gas) no digestor',base:'15%',range:'10-20%',ref:'Metcalf & Eddy, 2014'},
+    {cat:'Economico',var:'Lang_factor',formula:'CAPEX_instalado = FOB * f_Lang',base:'3.6',range:'3.1-4.7',ref:'Towler & Sinnott, 2012, Tab.7.7 (fluidos)'},
+    {cat:'Economico',var:'Cap. giro',formula:'Capital giro = 15% do CAPEX inst.',base:'15%',range:'10-20%',ref:'Towler & Sinnott, 2012, Cap.7'},
+    {cat:'Economico',var:'Manutencao',formula:'Custo anual de manutencao',base:'3% CAPEX',range:'2-5%',ref:'Towler & Sinnott, 2012, Tab.8.2'},
+    {cat:'Economico',var:'VPL',formula:'-CAPEX + SUM(FC_t/(1+i)^t)',base:'Calculado',range:'>0 viavel',ref:'Towler & Sinnott, 2012, Cap.9; Blank & Tarquin, Eng. Economy'},
+    {cat:'Economico',var:'TIR',formula:'Taxa que zera VPL (Newton-Raphson)',base:'Calculado',range:'>TMA',ref:'Blank & Tarquin, Eng. Economy, 8ed'},
+    {cat:'Carbono',var:'Fator CO2eq',formula:'tCO2eq/Nm3 CH4 evitado',base:'0.000714',range:'0.0007',ref:'IPCC AR5, GWP CH4=28; CDM methodology AMS-III.H'},
+    {cat:'Carbono',var:'Preco carbono',formula:'Preco por tCO2eq (mercado vol.)',base:'R$200/t',range:'100-400',ref:'Ecosystem Marketplace 2024; VERRA'},
+  ];},
+  renderCharts(){const m=this.m;const dk={paper_bgcolor:'transparent',plot_bgcolor:'transparent',font:{color:'#94a3b8',size:11},margin:{t:40,b:40,l:50,r:20}};const cfg={displayModeBar:false,responsive:true};
+    if(this.activeTab==='charts'){Plotly.newPlot('chart-biogas-comp',[{values:[m.m_CH4,m.m_CO2,m.m_outros],labels:['CH4','CO2','Outros'],type:'pie',marker:{colors:['#f59e0b','#6b7280','#3b82f6']},textinfo:'label+percent',hole:0.4}],{...dk,title:'Biogas (massa)'},cfg);Plotly.newPlot('chart-sv-substrato',[{values:[m.SV_lodo,m.SV_vinhaca,m.SV_residuo],labels:['Lodo','Vinhaca','Residuo'],type:'pie',marker:{colors:['#92400e','#059669','#7c3aed']},hole:0.4}],{...dk,title:'SV por substrato'},cfg);Plotly.newPlot('chart-termico',[{x:['Aquec.','Perdas','Reacao(-)','Demanda','CHP','Exc.'],y:[m.Q_aquec,m.Q_perdas,-m.Q_reacao,m.Q_demanda,m.Q_CHP,m.Q_excedente],type:'bar',marker:{color:['#ef4444','#f97316','#22c55e','#eab308','#3b82f6','#06b6d4']}}],{...dk,title:'Balanco termico MJ/d'},cfg);Plotly.newPlot('chart-sankey',[{type:'sankey',orientation:'h',node:{label:['Biogas','CHP','Elet.','Calor','Perdas','Aux.','E.liq','Aquec.','Exc.'],color:['#f59e0b','#b45309','#3b82f6','#ef4444','#6b7280','#475569','#22c55e','#f97316','#06b6d4']},link:{source:[0,1,1,1,2,2,3,3],target:[1,2,3,4,5,6,7,8],value:[m.E_biogas,m.E_el_MJ,m.Q_CHP,m.E_biogas-m.E_el_MJ-m.Q_CHP,m.E_aux*3.6,m.E_liq*3.6,m.Q_demanda,m.Q_excedente]}}],{...dk,title:'Sankey energia'},cfg);const els=['C','H','O','N','S'],eln=this.elemental;Plotly.newPlot('chart-elementar',[{name:'In',x:els,y:eln.map(e=>e.input),type:'bar',marker:{color:'#3b82f6'}},{name:'Gas',x:els,y:eln.map(e=>e.gas),type:'bar',marker:{color:'#f59e0b'}},{name:'Dig',x:els,y:eln.map(e=>e.dig),type:'bar',marker:{color:'#22c55e'}}],{...dk,title:'Elem. kg/d',barmode:'group'},cfg);const cn=m.checks.map(c=>c.name),cv=m.checks.map(c=>c.ok?1:0);Plotly.newPlot('chart-checks',[{type:'scatterpolar',r:[...cv,cv[0]],theta:[...cn,cn[0]],fill:'toself',fillcolor:'rgba(34,197,94,0.2)',line:{color:'#22c55e'}}],{...dk,title:'10 Checks',polar:{radialaxis:{visible:true,range:[0,1]},bgcolor:'transparent'}},cfg);}
+    if(this.activeTab==='optim'){const sr=this.scenarioResults;Plotly.newPlot('chart-scenarios',[{name:'Biogas',x:sr.map(r=>r.name),y:sr.map(r=>r.biogas),type:'bar',marker:{color:'#f59e0b'}}],{...dk,title:'Biogas/cenario'},cfg);const sv=this.sensVars.find(v=>v.key===this.sensX);if(sv){const xs=[],ys=[];for(let x=sv.min;x<=sv.max;x+=sv.step){const pp={...this.p,[sv.key]:x};if(sv.key==='x_residuo'){pp.x_lodo=Math.max(0.1,1-pp.x_vinhaca-x);pp.x_residuo=x;}const mm=createModel(pp,this.taxaDesconto);xs.push(x);ys.push(mm[this.sensY]||0);}Plotly.newPlot('chart-sensib',[{x:xs,y:ys,type:'scatter',mode:'lines+markers',line:{color:'#f59e0b',width:2},marker:{size:4}}],{...dk,title:sv.label+' vs '+this.sensY,xaxis:{title:sv.label},yaxis:{title:this.sensY}},cfg);}const xR=[];for(let r=0.05;r<=0.60;r+=0.05)xR.push(r);const tV=[];for(let t=10;t<=40;t+=2)tV.push(t);const zD=tV.map(trh=>xR.map(xr=>{const xv=Math.min(0.30,1-0.40-xr),xl=1-xv-xr;if(xl<0.05)return null;const pp={...this.p,x_lodo:xl,x_vinhaca:xv,x_residuo:xr,TRH:trh,eta_SV:Math.min(30+1.5*trh,80)};return createModel(pp,this.taxaDesconto).V_biogas;}));Plotly.newPlot('chart-3d',[{type:'surface',z:zD,x:xR.map(v=>(v*100).toFixed(0)+'%'),y:tV,colorscale:'YlOrRd',colorbar:{title:'Nm3/d'}}],{...dk,title:'3D: Biogas',scene:{xaxis:{title:'%Res'},yaxis:{title:'TRH'},zaxis:{title:'Nm3/d'},bgcolor:'#0f172a'}},cfg);}
+    if(this.activeTab==='econ'){Plotly.newPlot('chart-capex',[{x:Object.keys(m.fob),y:Object.values(m.fob),type:'bar',marker:{color:'#f59e0b'}}],{...dk,title:'CAPEX FOB R$'},cfg);Plotly.newPlot('chart-opex',[{values:[m.opex_mdo,m.opex_naoh,m.opex_carvao,m.opex_agua,m.opex_manut,m.opex_descarte,m.opex_seguro],labels:['MDO','NaOH','Carvao','Agua','Manut.','Desc.','Seg.'],type:'pie',hole:0.4,marker:{colors:['#3b82f6','#8b5cf6','#6b7280','#06b6d4','#f59e0b','#ef4444','#ec4899']}}],{...dk,title:'OPEX R$/ano'},cfg);const fc=m.fluxo_caixa;Plotly.newPlot('chart-cashflow',[{name:'FC anual',x:fc.map(f=>f.ano),y:fc.map(f=>f.liq),type:'bar',marker:{color:fc.map(f=>f.liq>=0?'#22c55e':'#ef4444')}},{name:'VPL acum',x:fc.map(f=>f.ano),y:fc.map(f=>f.vplAcum),type:'scatter',mode:'lines+markers',line:{color:'#f59e0b',width:2}}],{...dk,title:'FC 20a ('+((this.taxaDesconto*100).toFixed(0))+'%)'},cfg);}
+  },
+  fmt(v){return v==null?'-':v.toFixed(1).replace(/\B(?=(\d{3})+(?!\d))/g,'.');},
+  fmtMoney(v){return v==null?'-':Math.round(v).toLocaleString('pt-BR');},
+};}
+</script>
+</body>
+</html>

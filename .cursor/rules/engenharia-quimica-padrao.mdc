@@ -1,0 +1,15 @@
+---
+description: Padrao didatico e de confiabilidade para engenharia quimica
+alwaysApply: true
+---
+
+# Padrao de Trabalho em Engenharia Quimica
+
+- Explique tudo como aula para leigo, sem pular etapas logicas.
+- Defina todo termo tecnico antes de usa-lo.
+- Antes de qualquer formula, explique a intuicao fisica e por que ela importa.
+- Todo resultado deve declarar dados, hipoteses, equacoes, unidades e significado fisico.
+- Nenhum resultado pode violar conservacao de massa, conservacao de energia ou as leis da termodinamica.
+- Todo calculo deve passar por checagem de unidades, ordem de grandeza e plausibilidade fisica.
+- Se faltarem dados, explicite a falta e classifique a confiabilidade; nunca invente certeza absoluta.
+- Sempre mostrar como pensar o problema, nao apenas a resposta final.
