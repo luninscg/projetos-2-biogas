@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Coluna de absorção — Water scrubbing (Lunins)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <style>[x-cloak]{display:none!important}
+  details > summary { list-style: none; }
+  details > summary::-webkit-details-marker { display: none; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen" x-data="colunaApp()" x-cloak>
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-20">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 class="text-xl font-semibold text-sky-300">Coluna de absorção — <span class="text-amber-200">Lunins</span></h1>
+        <p class="text-xs text-slate-400 mt-1">Water scrubbing · Kremser (diluído) · McCabe–Thiele · HETP · Rastreio · Relatório didático <span class="text-slate-500">(ver caixa “vs Aspen”)</span></p>
+      </div>
+      <div class="flex flex-wrap gap-2 text-xs">
+        <button type="button" @click="presetLunins()" class="px-3 py-1.5 rounded-lg bg-emerald-800 hover:bg-emerald-700 border border-emerald-600">Preset Lunins v1</button>
+        <button type="button" @click="presetPlanilhaUltima()" class="px-3 py-1.5 rounded-lg bg-teal-900 hover:bg-teal-800 border border-teal-600" title="Composições e inertes de «ultima planilha.xlsx» — ver aviso A (y,x) vs A_inerte">Preset «ultima planilha»</button>
+        <button type="button" @click="saveLocal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600">Guardar browser</button>
+        <button type="button" @click="loadLocal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600">Carregar browser</button>
+        <label class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 cursor-pointer hover:bg-slate-700">
+          Importar JSON
+          <input type="file" accept=".json,application/json" class="hidden" @change="importJson($event)" />
+        </label>
+        <button type="button" @click="exportJson()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600">Exportar JSON</button>
+        <button type="button" @click="exportCsv()" class="px-3 py-1.5 rounded-lg bg-indigo-900 hover:bg-indigo-800 border border-indigo-700" title="UTF-8 com BOM + sumário e análise narrativa">CSV relatório</button>
+        <button type="button" @click="exportXlsx()" class="px-3 py-1.5 rounded-lg bg-indigo-700 hover:bg-indigo-600 border border-indigo-500" title="Multi-folha: Sumario, Analise, Resultados, Premissas, Rastreio, Figuras (URL + procedimento PNG), Checks">Excel relatório</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-6 grid lg:grid-cols-3 gap-6">
+    <!-- Referências -->
+    <aside class="lg:col-span-1 space-y-4 order-2 lg:order-1">
+      <section class="rounded-xl border border-amber-900/50 bg-amber-950/20 p-4">
+        <h2 class="text-sm font-bold text-amber-200 mb-2">Referências (sempre visíveis)</h2>
+        <ul class="text-xs space-y-2 text-slate-300 leading-relaxed">
+          <li><strong class="text-slate-200">Seader, Henley, Roper</strong> — <em>Separation Process Principles</em> — linha de operação, inertes L′/V′, estágios.</li>
+          <li><strong class="text-slate-200">Treybal</strong> — <em>Mass Transfer Operations</em> — absorção diluída, Kremser.</li>
+          <li><strong class="text-slate-200">Perry’s Handbook</strong> (Green &amp; Perry) — VLE, HETP, hidráulica de recheio.</li>
+          <li><strong class="text-slate-200">Kister</strong> — <em>Distillation Design</em> — GPDC / inundação (transferível a recheio).</li>
+          <li><strong class="text-slate-200">ISO 6976</strong> — propriedades e composição de gases (bases, Nm³).</li>
+          <li><strong class="text-slate-200">Henry / CO₂–H₂O</strong> — revisões (ex. Carroll et al.; Duan &amp; Sun) para <em>m(T,P)</em> rigoroso.</li>
+        </ul>
+        <p class="text-[11px] text-amber-100/80 mt-3 border-t border-amber-900/40 pt-2">“Alta confiança” aqui = <strong>rastreio + checks</strong>. Exactidão absoluta exige <strong>dados VLE/recheio</strong> do fabricante ou simulador rigoroso.</p>
+      </section>
+
+      <section class="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+        <h2 class="text-sm font-bold text-cyan-300 mb-2">Nível do ensaio (transparência)</h2>
+        <p class="text-xs text-slate-300 leading-relaxed">Para <strong>water scrubbing</strong> com CO₂ <strong>diluído</strong>, equilíbrio <strong>y* = m·x</strong> e <strong>L/G</strong> molares constantes, esta página implementa o <strong>mesmo núcleo algébrico</strong> que um <strong>RadFrac</strong> (Aspen Plus) ou <strong>Column</strong> (Aspen HYSYS) em modo <strong>estágios de equilíbrio ideais</strong> com Henry linear e sem queda de pressão por prato: Kremser / McCabe–Thiele, balanço global na reta de operação, <strong>Z = N·HETP</strong> e um <strong>D</strong> geométrico a partir de <strong>u</strong> e <strong>Q_G</strong>. Isso é o <strong>teto realista</strong> para uma ferramenta <em>no browser</em> neste nicho: <strong>não</strong> substitui MESH rigoroso, pacotes EOS, coluna <em>rate-based</em>, queda de carga, nem folha de fabricante embutida — aí o simulador comercial continua indispensável.</p>
+      </section>
+
+      <section class="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+        <h2 class="text-sm font-bold text-sky-300 mb-2">Glossário rápido</h2>
+        <dl class="text-xs space-y-2 text-slate-300">
+          <dt class="text-slate-200 font-medium">L/G (molar)</dt><dd>Razão entre fluxo molar de líquido e gás, <strong>livre de soluto</strong> na definição clássica (ver Seader).</dd>
+          <dt class="text-slate-200 font-medium mt-1">m em y = mx</dt><dd>Inclinação da <strong>curva de equilíbrio</strong> na aproximação diluída (Henry). Ajustar com dados VLE.</dd>
+          <dt class="text-slate-200 font-medium mt-1">A (Kremser)</dt><dd>Fator de absorção <code class="text-sky-400">A = (L/G) / m</code> nesta ferramenta (igual ao maestro <code>Dimensionamento_Scrubber</code>).</dd>
+          <dt class="text-slate-200 font-medium mt-1">HETP</dt><dd>Altura equivalente a um estágio teórico (recheio).</dd>
+          <dt class="text-slate-200 font-medium mt-1">Kremser vs McCabe</dt><dd><strong>Kremser</strong>: solução fechada com equilíbrio <em>linear</em> y* = m x e L/G constantes (caso desta página). <strong>McCabe–Thiele</strong>: mesmas hipóteses → mesmos pratos teóricos, desenhados em degraus entre <strong>reta de operação</strong> (balanço molar) e <strong>curva de equilíbrio</strong>. Se a curva real for não-linear, o diagrama McCabe torna-se obrigatório e o Kremser linear deixa de ser exacto.</dd>
+        </dl>
+      </section>
+
+      <section class="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+        <h2 class="text-sm font-bold text-sky-300 mb-2">Validade do Kremser usado</h2>
+        <ul class="text-xs text-slate-400 list-disc pl-4 space-y-1">
+          <li>CO₂ <strong>diluído</strong> no gás; equilíbrio aproximado por reta.</li>
+          <li>Isotermia / propriedades médias (premissa).</li>
+          <li><strong>A ≠ 1</strong> (evitar singularidade).</li>
+          <li>Com <strong>y* = m x</strong> e <strong>L/G</strong> constantes, o <strong>McCabe–Thiele</strong> e o <strong>Kremser</strong> contam o mesmo <strong>N</strong> (pratos teóricos); o diagrama mostra a mesma malha que a fórmula logarítmica.</li>
+        </ul>
+      </section>
+    </aside>
+
+    <!-- Form + results -->
+    <div class="lg:col-span-2 space-y-6 order-1 lg:order-2">
+      <section class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+        <h2 class="text-lg font-semibold text-white mb-3">Premissas editáveis</h2>
+        <div class="grid sm:grid-cols-2 gap-4 text-sm">
+          <label class="block">y<sub>CO₂,in</sub> (fracção molar)
+            <input type="number" step="0.001" x-model.number="p.yin" @input="recalc()" class="mt-1 w-full rounded bg-slate-800 border border-slate-600 px-2 py-1" />
+            <input type="range" min="0.05" max="0.55" step="0.005" x-model.number="p.yin" @input="recalc()" class="w-full mt-1 accent-sky-500" />
+          </label>
+          <label class="block">y<sub>CO₂,out</sub> (meta)
+            <input type="number" step="0.001" x-model.number="p.yout" @input="recalc()" class="mt-1 w-full rounded bg-slate-800 border border-slate-600 px-2 py-1" />
+            <input type="range" min="0.005" max="0.12" step="0.005" x-model.number="p.yout" @input="recalc()" class="w-full mt-1 accent-sky-500" />
+          </label>
+          <label class="block">m (y = m x) —
+            <span class="text-amber-300 text-xs">calibrar com VLE / Henry</span>
+            <input type="number" step="0.01" x-model.number="p.m" @input="recalc()" class="mt-1 w-full rounded bg-slate-800 border border-slate-600 px-2 py-1" />
+            <input type="range" min="0.08" max="0.8" step="0.01" x-model.number="p.m" @input="recalc()" class="w-full mt-1 accent-amber-500" />
+          </label>
+          <label class="block">L/G molar (—)
+            <input type="number" step="0.05" x-model.number="p.LG" @input="recalc()" class="mt-1 w-full rounded bg-slate-800 border border-slate-600 px-2 py-1" />
+            <input type="range" min="0.5" max="6" step="0.05" x-model.number="p.LG" @input="recalc()" class="w-full mt-1 accent-emerald-500" />
+          </label>
+          <label class="block">x<sub>CO₂,in</sub> no líquido no <strong>topo</strong> (—)
+            <input type="number" step="0.0001" x-model.number="p.x0" @input="recalc()" class="mt-1 w-full rounded bg-slate-800 border border-slate-600 px-2 py-1" />
+            <input type="range" min="0" max="0.02" step="0.0002" x-model.number="p.x0" @input="recalc()" class="w-full mt-1 accent-violet-400" />
+            <p class="text-[10px] text-amber-200/90 mt-1">Usado na <strong>reta de operação</strong> McCabe e no balanço global. Água “fresca” → 0; recirculação → medir ou estimar (laboratório / simulador).</p>
+          </label>
+          <label class="block">HETP (m)
+            <input type="number" step="0.05" x-model.number="p.HETP" @input="recalc()" class="mt-1 w-full rounded bg-slate-800 border border-slate-600 px-2 py-1" />
+          </label>
+          <label class="block">Q<sub>G</sub> (m³/h) — gás na coluna
+            <input type="number" step="0.5" x-model.number="p.QG_m3h" @input="recalc()" class="mt-1 w-full rounded bg-slate-800 border border-slate-600 px-2 py-1" />
+            <p class="text-[10px] text-slate-500 mt-1">Preset ≈ BM!G23/24 com G23 = 7342,854 Nm³/dia (proxy documentado).</p>
+          </label>
+          <label class="block">Q<sub>L</sub> água (m³/h)
+            <input type="number" step="0.1" x-model.number="p.QL_m3h" @input="recalc()" class="mt-1 w-full rounded bg-slate-800 border border-slate-600 px-2 py-1" />
+            <p class="text-[10px] text-slate-500 mt-1">Default ≈ Purificacao_Biometano!B12/24.</p>
+          </label>
+          <label class="block">ρ<sub>L</sub> (kg/m³)
+            <input type="number" step="1" x-model.number="p.rhoL" @input="recalc()" class="mt-1 w-full rounded bg-slate-800 border border-slate-600 px-2 py-1" />
+          </label>
+          <label class="block">ρ<sub>G</sub> (kg/m³)
+            <input type="number" step="0.01" x-model.number="p.rhoG" @input="recalc()" class="mt-1 w-full rounded bg-slate-800 border border-slate-600 px-2 py-1" />
+          </label>
+          <label class="block">u<sub>flood</sub> (m/s) — referência
+            <input type="number" step="0.01" x-model.number="p.uFlood" @input="recalc()" class="mt-1 w-full rounded bg-slate-800 border border-slate-600 px-2 py-1" />
+          </label>
+          <label class="block">Fracção da inundante (%)
+            <input type="number" step="1" min="20" max="90" x-model.number="p.fracFloodPct" @input="recalc()" class="mt-1 w-full rounded bg-slate-800 border border-slate-600 px-2 py-1" />
+          </label>
+          <label class="block">P coluna (Pa) — contexto compressor
+            <input type="number" step="1000" x-model.number="p.P_col_Pa" @input="recalc()" class="mt-1 w-full rounded bg-slate-800 border border-slate-600 px-2 py-1" />
+          </label>
+          <label class="block">T (°C)
+            <input type="number" step="0.5" x-model.number="p.T_C" @input="recalc()" class="mt-1 w-full rounded bg-slate-800 border border-slate-600 px-2 py-1" />
+          </label>
+        </div>
+
+        <details class="mt-5 rounded-lg border border-cyan-900/50 bg-slate-950/60 p-3 group">
+          <summary class="cursor-pointer text-sm font-semibold text-cyan-200 list-none flex items-center gap-2">
+            <span class="text-cyan-400 group-open:rotate-90 transition-transform inline-block">▸</span>
+            Como ler esta página (passo a passo)
+          </summary>
+          <ol class="mt-3 text-xs text-slate-300 space-y-2 list-decimal pl-5 leading-relaxed">
+            <li><strong>Defina o problema físico:</strong> gás com CO₂ a entrar (<span class="font-mono text-sky-300">y_ent</span>), meta de saída (<span class="font-mono text-sky-300">y_sai</span>), água (ou líquido) no topo com CO₂ dissolvido (<span class="font-mono text-sky-300">x₀</span>).</li>
+            <li><strong>Equilíbrio gas–líquido:</strong> nesta ferramenta, <span class="font-mono">y* = m·x</span> (Henry diluído). O número <span class="font-mono">m</span> resume a química-física; se mudar <span class="font-mono">T</span> ou <span class="font-mono">P</span> na vida real, em geral <span class="font-mono">m</span> muda — aqui eles são só <em>contexto</em> até ligarmos a um pacote VLE.</li>
+            <li><strong>Operação:</strong> <span class="font-mono">L/G</span> molar diz quanto líquido “lavagem” existe por mol de gás. Junto com <span class="font-mono">m</span> define <span class="font-mono">A = (L/G)/m</span>.</li>
+            <li><strong>Resultados centrais:</strong> <span class="font-mono">N</span> = pratos teóricos; <span class="font-mono">Z = N·HETP</span> passa de “pratos” a “metros de recheio”; <span class="font-mono">D</span> vem da geometria do gás e da velocidade operativa.</li>
+            <li><strong>McCabe–Thiele:</strong> confirme visualmente que a reta de operação está acima da equilíbrio e que os degraus fecham até <span class="font-mono">y_ent</span>.</li>
+            <li><strong>Análise executiva + export:</strong> leia os cartões e depois descarregue o Excel para arquivo com narrativa e tabelas.</li>
+          </ol>
+        </details>
+
+        <details class="mt-3 rounded-lg border border-slate-700 bg-slate-950/50 p-3">
+          <summary class="cursor-pointer text-sm font-semibold text-amber-200 list-none flex items-center gap-2"><span class="text-amber-400">▸</span> Dicionário: cada variável (símbolo → significado → unidade)</summary>
+          <dl class="mt-3 text-xs text-slate-300 space-y-3 border-t border-slate-800 pt-3">
+            <div><dt class="text-sky-300 font-medium">y_ent (y_CO₂,in)</dt><dd class="mt-0.5">Fração molar de CO₂ no <strong>gás a entrar</strong> no fundo da coluna (—). Mede “quão sujo” chega o biogás antes do scrubber.</dd></div>
+            <div><dt class="text-sky-300 font-medium">y_sai (y_CO₂,out)</dt><dd class="mt-0.5">Fração molar de CO₂ no <strong>gás a sair</strong> no topo (—). É a <strong>meta</strong> de purificação que estás a impor ao modelo.</dd></div>
+            <div><dt class="text-amber-300 font-medium">m</dt><dd class="mt-0.5">Pendente da <strong>recta de equilíbrio</strong> <span class="font-mono">y* = m·x</span> (—). Na prática vem de Henry/VLE a <span class="font-mono">T,P</span>. Erro em <span class="font-mono">m</span> desloca <span class="font-mono">N</span> e o diagrama inteiro.</dd></div>
+            <div><dt class="text-emerald-300 font-medium">L/G</dt><dd class="mt-0.5">Razão molar líquido/gás (—). Controla a <strong>pendente da reta de operação</strong> no diagrama y–x. No Aspen, corresponde a fixar refluxo/absorcionado após conversão a bases molares coerentes.</dd></div>
+            <div><dt class="text-violet-300 font-medium">x₀</dt><dd class="mt-0.5">CO₂ dissolvido no líquido que <strong>entra no topo</strong> (—). Água fresca → 0; recirculação → medir.</dd></div>
+            <div><dt class="text-slate-200 font-medium">HETP</dt><dd class="mt-0.5">Altura de enchimento equivalente a um prato teórico (m). Liga <span class="font-mono">N</span> a <span class="font-mono">Z</span>. Tipicamente vem do <strong>fabricante do recheio</strong> a uma carga e temperatura.</dd></div>
+            <div><dt class="text-slate-200 font-medium">Q_G, Q_L</dt><dd class="mt-0.5">Caudais volumétricos (m³/h) para contexto de <strong>BM</strong> e de diâmetro; o cálculo de <span class="font-mono">N</span> é <strong>molar</strong> — não confundir bases.</dd></div>
+            <div><dt class="text-slate-200 font-medium">ρ_L, ρ_G, u_flood, fracção inundante</dt><dd class="mt-0.5">Entram no <strong>proxy hidráulico</strong> e no FLV simbólico; <span class="font-mono">u_oper = (%)·u_flood</span>; <span class="font-mono">D</span> a partir de <span class="font-mono">Q_G</span> e área.</dd></div>
+            <div><dt class="text-slate-200 font-medium">P_coluna, T</dt><dd class="mt-0.5">Contexto físico (Pa, °C). Ainda <strong>não</strong> recalculam <span class="font-mono">m</span> automaticamente — servem para ti alinhares mentalmente (ou no Aspen) com o pacote termodinâmico.</dd></div>
+          </dl>
+        </details>
+
+        <details class="mt-3 rounded-lg border border-violet-900/40 bg-violet-950/20 p-3">
+          <summary class="cursor-pointer text-sm font-semibold text-violet-200 list-none flex items-center gap-2"><span class="text-violet-400">▸</span> Esta ferramenta vs Aspen Plus / Aspen HYSYS — o que é “nível Aspen” aqui?</summary>
+          <div class="mt-3 text-xs text-slate-300 space-y-3 border-t border-violet-900/30 pt-3 leading-relaxed">
+            <p><strong>O que já está ao nível de um <em>screening</em> bem feito no simulador</strong> (para o nosso caso específico: absorção diluída, estágios de equilíbrio, Henry linear): balanço global na <strong>reta de operação</strong>, <strong>N</strong> por Kremser / degraus de McCabe, conversão para <strong>Z</strong> com HETP, e um <strong>D</strong> geométrico simples — o mesmo <strong>tipo de resposta</strong> que obténs num <strong>RadFrac</strong> / <strong>Column</strong> com estágios ideais, <strong>K</strong> linear e <strong>L, V</strong> molares constantes por estágio.</p>
+            <p><strong>O que o Aspen/HYSYS traz por cima</strong> (e esta página <em>de propósito</em> não faz): pacotes EOS e coeficientes de atividade, coluna <strong>rate-based</strong> (MESH), eficiência de Murphree por prato, queda de pressão e perfil de temperatura, integração térmica, sensibilidade automática, folhas de recheio embutidas, e validação legal de emissões.</p>
+            <p class="text-amber-100/90 border-l-2 border-amber-500 pl-2"><strong>Conclusão UX:</strong> para <strong>aprender, alinhar a turma e documentar premissas</strong>, estamos no <strong>teto útil</strong> de uma SPA. Para <strong>FEED de projecto executivo</strong>, o passo seguinte continua a ser o <strong>fluxograma rigoroso</strong> no simulador com dados de fornecedores.</p>
+          </div>
+        </details>
+      </section>
+
+      <section class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+        <h2 class="text-lg font-semibold text-white mb-2">Equações usadas (1.ª lei em forma algébrica)</h2>
+        <div class="text-xs text-slate-300 space-y-2 font-mono bg-slate-950/80 p-3 rounded border border-slate-800">
+          <p>A = (L/G) / m</p>
+          <p>N = ln( ((y<sub>ent</sub> − m x₀) / (y<sub>sai</sub> − m x₀)) (1 − 1/A) + 1/A ) / ln(A) &nbsp;&nbsp; (A ≠ 1; x₀ = CO₂ no líquido ao topo)</p>
+          <p>Se x₀ = 0 → N = ln((y<sub>ent</sub>/y<sub>sai</sub>)(1 − 1/A) + 1/A) / ln(A) (forma do maestro)</p>
+          <p>Z = N × HETP</p>
+          <p>u<sub>op</sub> = (fracção inundante) × u<sub>flood</sub></p>
+          <p>D = √(4 Q<sub>G</sub> / (π u<sub>op</sub>)) com Q<sub>G</sub> em m³/s</p>
+          <p>FLV<sub>proxy</sub> = (L/G) √(ρ<sub>G</sub>/ρ<sub>L</sub>) — <span class="text-amber-300">mesma forma simbólica do maestro; L/G aqui é molar (nota de consistência dimensional).</span></p>
+        </div>
+        <p class="text-xs text-slate-400 mt-2"><strong>Reta de operação</strong> (contracorrente, L e G molares ≈ constantes, soluto diluído): passa por <strong>(x₀, y<sub>sai</sub>)</strong> e por <strong>(x<sub>sai,ℓ</sub>, y<sub>ent,g</sub>)</strong> com <span class="font-mono text-sky-300">x<sub>sai,ℓ</sub> = x₀ + (y<sub>ent</sub> − y<sub>sai</sub>) / (L/G)</span> — balanço global de soluto. A composição do líquido que <em>deixa</em> o primeiro prato não é x₀; o McCabe parte do canto (x₀, y<sub>sai</sub>) e dá o primeiro degrau horizontal até <span class="font-mono">y<sub>sai</sub> = m x</span> na curva de equilíbrio (Seader / McCabe).</p>
+      </section>
+
+      <section class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+        <h2 class="text-lg font-semibold text-white mb-3">Resultados — valor + leitura física</h2>
+        <p class="text-xs text-slate-400 mb-4">Cada cartão mostra o <strong>número</strong> e, por baixo, <strong>o que concluir</strong> em linguagem de processo (sem substituir o relatório de engenharia).</p>
+        <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+          <div class="rounded-lg bg-slate-800/90 p-3 border border-slate-700 flex flex-col">
+            <div class="text-slate-400 text-xs font-medium">A — factor de absorção (base y,x da ferramenta)</div>
+            <div class="text-xl text-sky-300 mt-1" x-text="fmt(r.A)"></div>
+            <p class="text-[10px] text-slate-500 mt-2 leading-snug border-t border-slate-700/60 pt-2 flex-1">Relação entre a “força do lavagem” <span class="font-mono text-slate-400">L/G</span> e a facilidade de partição <span class="font-mono text-slate-400">m</span>. <strong>A &gt; 1</strong> é condição típica para a absorção com equilíbrio linear; quanto maior, menos pratos — mas não ignora custo de líquido.</p>
+          </div>
+          <div class="rounded-lg bg-slate-800/90 p-3 border border-teal-800/60 flex flex-col" x-show="isFinite(r.AInerte)">
+            <div class="text-slate-400 text-xs font-medium">A<sub>inerte</sub> — (L′/V′)/m <span class="text-teal-400">(planilha)</span></div>
+            <div class="text-xl text-teal-300 mt-1" x-text="fmt(r.AInerte)"></div>
+            <p class="text-[10px] text-slate-500 mt-2 leading-snug border-t border-slate-700/60 pt-2 flex-1">Indicador alinhado à aba <strong>Coluna de Absorção</strong> de «ultima planilha.xlsx»: <span class="font-mono text-teal-200">L′</span> e <span class="font-mono text-teal-200">V′</span> molares de inerte. Com <span class="font-mono">y_ent</span> elevado, <span class="font-mono">A</span> em (y,x) pode diferir; compare com este valor antes de julgar pinça.</p>
+          </div>
+          <div class="rounded-lg bg-slate-800/90 p-3 border border-slate-700 flex flex-col">
+            <div class="text-slate-400 text-xs font-medium">N — pratos teóricos (Kremser = McCabe)</div>
+            <div class="text-xl text-sky-300 mt-1" x-text="fmt(r.N)"></div>
+            <p class="text-[10px] text-slate-500 mt-2 leading-snug border-t border-slate-700/60 pt-2 flex-1">Número de <strong>estágios de equilíbrio ideais</strong> necessários. No Aspen, corresponderia a contar estágios com eficiência 100% no modelo ideal; com HETP único, passamos a altura <span class="font-mono text-slate-400">Z</span>.</p>
+          </div>
+          <div class="rounded-lg bg-slate-800/90 p-3 border border-slate-700 flex flex-col">
+            <div class="text-slate-400 text-xs font-medium">x<sub>sai,ℓ</sub> — líquido no fundo (ponto da OL)</div>
+            <div class="text-lg text-violet-300 font-mono mt-1" x-text="fmt(r.xOLbot)"></div>
+            <p class="text-[10px] text-slate-500 mt-2 leading-snug border-t border-slate-700/60 pt-2 flex-1">Fração molar de CO₂ no líquido no <strong>fundo</strong> que <strong>fecha o balanço global de soluto</strong> juntamente com a reta de operação entre (x₀, y_sai) e (x_sai,ℓ, y_ent). Não é uma medição directa: é <strong>deduzida</strong> de x₀, y_ent, y_sai e L/G.</p>
+          </div>
+          <div class="rounded-lg bg-slate-800/90 p-3 border border-slate-700 flex flex-col">
+            <div class="text-slate-400 text-xs font-medium">Z — altura de enchimento</div>
+            <div class="text-xl text-emerald-300 mt-1" x-text="fmt(r.Z)"></div>
+            <p class="text-[10px] text-slate-500 mt-2 leading-snug border-t border-slate-700/60 pt-2 flex-1"><span class="font-mono text-slate-400">Z = N × HETP</span>. A conclusão prática: “ordem de grandeza de metros de recheio” se o <strong>HETP</strong> for representativo do pacote real.</p>
+          </div>
+          <div class="rounded-lg bg-slate-800/90 p-3 border border-slate-700 flex flex-col">
+            <div class="text-slate-400 text-xs font-medium">D — diâmetro interno (proxy)</div>
+            <div class="text-xl text-emerald-300 mt-1" x-text="fmt(r.D)"></div>
+            <p class="text-[10px] text-slate-500 mt-2 leading-snug border-t border-slate-700/60 pt-2 flex-1">Área da secção para passar <span class="font-mono text-slate-400">Q_G</span> a <span class="font-mono text-slate-400">u_oper</span>. Conclusão: <strong>geometria de fluxo</strong>; validar com correlações de inundante e recheio (Kister / fabricante).</p>
+          </div>
+          <div class="rounded-lg bg-slate-800/90 p-3 border border-slate-700 flex flex-col">
+            <div class="text-slate-400 text-xs font-medium">u<sub>op</sub> — velocidade superficial do gás</div>
+            <div class="text-xl text-slate-200 mt-1" x-text="fmt(r.uOp)"></div>
+            <p class="text-[10px] text-slate-500 mt-2 leading-snug border-t border-slate-700/60 pt-2 flex-1">Fracção da <span class="font-mono text-slate-400">u_flood</span> de referência. Conclusão: compromisso entre <strong>capacidade</strong> e <strong>margem à inundação</strong>.</p>
+          </div>
+          <div class="rounded-lg bg-slate-800/90 p-3 border border-slate-700 flex flex-col">
+            <div class="text-slate-400 text-xs font-medium">FLV proxy</div>
+            <div class="text-xl text-slate-200 mt-1" x-text="fmt(r.FLV)"></div>
+            <p class="text-[10px] text-slate-500 mt-2 leading-snug border-t border-slate-700/60 pt-2 flex-1">Indicador simbólico alinhado ao maestro de tubulação; conclusão: útil para <strong>comunicação com hidráulica</strong>, não para termodinâmica de pratos.</p>
+          </div>
+          <div class="rounded-lg bg-slate-800/90 p-3 border border-slate-700 flex flex-col">
+            <div class="text-slate-400 text-xs font-medium">Q<sub>L</sub> — caudal de água (referência)</div>
+            <div class="text-xl text-slate-200 mt-1" x-text="fmt(p.QL_m3h)"></div>
+            <p class="text-[10px] text-slate-500 mt-2 leading-snug border-t border-slate-700/60 pt-2 flex-1">Lembra o <strong>balanço de utilidades</strong> do projecto; o modelo de pratos usa <span class="font-mono text-slate-400">L/G</span> molar — cruza com a planilha de purificação.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="rounded-xl border border-emerald-900/40 bg-gradient-to-br from-slate-900/90 to-emerald-950/30 p-5 shadow-lg shadow-emerald-950/20">
+        <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-lg font-semibold text-emerald-200">Análise executiva — interpretação dos resultados</h2>
+            <p class="text-xs text-slate-400 mt-1 max-w-3xl">Texto gerado automaticamente: traduz <strong>A, N, Z, D, Δy</strong> em frases de conclusão, compara com o que um <strong>RadFrac/Column</strong> daria em modo ideal linear, e lista limites. Usa também nos exports (folha Analise).</p>
+          </div>
+          <span class="text-[10px] uppercase tracking-wide px-2 py-1 rounded border" :class="r.analise?.statusClass" x-text="r.analise?.statusLabel || '—'"></span>
+        </div>
+        <div class="grid gap-3 md:grid-cols-2">
+          <template x-for="(bl, idx) in (r.analise?.blocos || [])" :key="idx">
+            <article class="rounded-lg border p-3 text-sm leading-relaxed" :class="bl.cardClass">
+              <h3 class="text-xs font-bold uppercase tracking-wide mb-2 opacity-90" x-text="bl.titulo"></h3>
+              <p class="text-slate-200 whitespace-pre-line" x-text="bl.texto"></p>
+            </article>
+          </template>
+        </div>
+        <ul class="mt-4 text-xs text-slate-500 space-y-1 border-t border-slate-700/60 pt-3">
+          <li><strong class="text-slate-400">Ordem de grandeza:</strong> confirme <span class="font-mono">N</span>, <span class="font-mono">Z</span> e <span class="font-mono">D</span> com folha do fabricante do recheio e com a hidráulica real (GPDC / inund).</li>
+          <li><strong class="text-slate-400">Export:</strong> o Excel inclui folha <em>Sumario</em> (painel), <em>Analise</em> (texto), <em>Figuras</em> (URL + procedimento para PNG), dados técnicos e rastreio de fontes.</li>
+        </ul>
+      </section>
+
+      <section
+        id="graph-dock"
+        class="rounded-2xl border-2 border-sky-500/25 bg-slate-900/70 p-5 shadow-xl shadow-sky-950/40 ring-1 ring-sky-500/20 transition-all"
+        :class="graphsExpanded ? 'fixed inset-3 z-[60] overflow-y-auto max-h-[calc(100vh-1.5rem)] shadow-2xl border-sky-400/40' : ''"
+      >
+        <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-xl font-bold text-sky-100 tracking-tight">Diagramas — equilíbrio e McCabe–Thiele</h2>
+            <p class="text-xs text-slate-400 mt-1 max-w-3xl">Figuras interactivas (Plotly). Use <strong>PNG</strong> para anexos de memória ou slides; export Excel inclui folha <em>Figuras</em> com URL e procedimento.</p>
+          </div>
+          <div class="flex flex-wrap gap-2 text-xs shrink-0">
+            <button type="button" @click="downloadPlotPng('plot-yx', 'coluna_lunins_diagrama_yx')" class="px-3 py-1.5 rounded-lg bg-sky-900 hover:bg-sky-800 border border-sky-600 text-sky-100">PNG y–x</button>
+            <button type="button" @click="downloadPlotPng('plot-mct', 'coluna_lunins_mccabe_thiele')" class="px-3 py-1.5 rounded-lg bg-violet-900 hover:bg-violet-800 border border-violet-600 text-violet-100">PNG McCabe</button>
+            <button type="button" @click="toggleGraphExpand()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-500 text-slate-200" x-text="graphsExpanded ? 'Fechar expansão' : 'Expandir gráficos'"></button>
+          </div>
+        </div>
+        <div class="grid lg:grid-cols-2 gap-6">
+          <figure class="rounded-xl border border-sky-800/60 bg-slate-950/50 p-4 ring-1 ring-sky-500/15 shadow-inner">
+            <figcaption class="text-lg font-semibold text-sky-200 mb-1">Diagrama y–x</figcaption>
+            <p class="text-xs text-slate-500 mb-2" x-text="r.mctLegend"></p>
+            <div id="plot-yx" class="w-full h-96 min-h-[24rem]" role="img" :aria-label="'Diagrama y-x: equilibrio y igual m x e reta de operacao. A=' + fmt(r.A)"></div>
+          </figure>
+          <figure class="rounded-xl border border-violet-800/60 bg-slate-950/50 p-4 ring-1 ring-violet-500/15 shadow-inner">
+            <figcaption class="text-lg font-semibold text-violet-200 mb-1">McCabe–Thiele (absorção)</figcaption>
+            <p class="text-xs text-slate-400 leading-relaxed mb-2">Degraus entre <span class="text-sky-300">y* = m x</span> e a <span class="text-amber-300">reta de operação</span>; <span class="font-mono text-emerald-300">N</span> (Kremser) coincide com a malha linear.</p>
+            <div id="plot-mct" class="w-full min-h-[28rem] h-[28rem]" role="img" aria-label="Diagrama McCabe-Thiele absorcao com degraus entre equilibrio e reta de operacao"></div>
+          </figure>
+        </div>
+      </section>
+
+      <section class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+        <h2 class="text-lg font-semibold text-white mb-2">Checklist de coerência</h2>
+        <ul class="text-sm space-y-1">
+          <template x-for="c in r.checks" :key="c.id">
+            <li class="flex gap-2 items-start">
+              <span x-text="c.ok ? '✓' : '✗'" :class="c.ok ? 'text-emerald-400' : 'text-red-400'"></span>
+              <span :class="c.ok ? 'text-slate-300' : 'text-red-200'" x-text="c.msg"></span>
+            </li>
+          </template>
+        </ul>
+      </section>
+
+      <section class="rounded-xl border border-slate-700 bg-slate-900/30 p-4 overflow-x-auto">
+        <h2 class="text-lg font-semibold text-emerald-200 mb-3">Rastreio: o que alimentar com dados mais precisos</h2>
+        <table class="w-full text-xs border-collapse">
+          <thead>
+            <tr class="text-left text-slate-400 border-b border-slate-700">
+              <th class="py-2 pr-2">Grandeza</th>
+              <th class="py-2 pr-2">Valor na ferramenta</th>
+              <th class="py-2 pr-2">Fonte “ouro”</th>
+              <th class="py-2 pr-2">Onde o grupo Lunins v1 pegou</th>
+              <th class="py-2">Confiança</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="row in rowsRastreio()" :key="row[0]">
+              <tr class="border-b border-slate-800/80 text-slate-300">
+                <td class="py-2 pr-2 font-medium text-slate-200" x-text="row[0]"></td>
+                <td class="py-2 pr-2 font-mono text-sky-200" x-text="row[1]"></td>
+                <td class="py-2 pr-2" x-text="row[2]"></td>
+                <td class="py-2 pr-2" x-text="row[3]"></td>
+                <td class="py-2 text-amber-100/90" x-text="row[4]"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+
+  <footer class="border-t border-slate-800 py-6 text-center text-[11px] text-slate-500 max-w-6xl mx-auto px-4">
+    Instituto Lunins — ferramenta educativa. Export CSV (UTF-8 + BOM) e Excel multi-folha: Sumário, Análise, Resultados, Premissas, Rastreio, Figuras, Referências, Checks. Preset «ultima planilha» lê composições e L′/V′ de «ultima planilha.xlsx» (Coluna de Absorção).
+  </footer>
+
+  <script>
+    const LS_KEY = 'lunins_coluna_absorcao_v2';
+
+    /** Reta de operação absorção diluída: y = (L/G)(x − x₀) + y_topo (gás). */
+    function yOperatingLine(x, p) {
+      return p.LG * (x - p.x0) + p.yout;
+    }
+
+    /** Degraus McCabe: alterna horizontal (y constante → equilíbrio) e vertical (x constante → OL). Partida (x₀, y_sai). */
+    function buildMcCabeStair(p) {
+      const m = p.m;
+      const x0 = p.x0;
+      const sx = [];
+      const sy = [];
+      let x = x0;
+      let y = p.yout;
+      sx.push(x);
+      sy.push(y);
+      const max = 80;
+      for (let i = 0; i < max; i++) {
+        const xEq = y / m;
+        if (!isFinite(xEq) || xEq < -1e-6) break;
+        sx.push(xEq);
+        sy.push(y);
+        const yOl = p.LG * (xEq - x0) + p.yout;
+        sx.push(xEq);
+        sy.push(yOl);
+        if (yOl >= p.yin - 1e-12) {
+          if (yOl > p.yin + 1e-12) {
+            sx.push(xEq);
+            sy.push(p.yin);
+          }
+          break;
+        }
+        x = xEq;
+        y = yOl;
+      }
+      return { sx, sy };
+    }
+    const G23_PROXY_Nm3d = 7342.854167;
+    /** Bloco resumo «ultima planilha.xlsx» / Coluna de Absorção (~R62–R66); L′, V′ em mol/h (inertes). */
+    const PLANILHA_ULTIMA_COLUNA = {
+      ficheiro: 'ultima planilha.xlsx',
+      aba: 'Coluna de Absorção',
+      Lprime_mol_h: 8003238.360710321,
+      Vprime_mol_h: 12715.693988958334,
+      y_ent: 0.68,
+      y_sai: 0.061,
+      x0: 0,
+      x_sai_liq: 0.0032837734168742983,
+      Y_ent: 2.1250000000000004,
+      Y_sai: 0.06496272630457933,
+      /** Pendente da recta y* = m x (coluna O/N da grelha de equilíbrio da planilha). */
+      m_eq: 206,
+    };
+    const EXPORT_META = {
+      titulo: 'Relatório técnico — Coluna de absorção (water scrubbing)',
+      subtitulo: 'Instituto Lunins — ferramenta didática com rastreio de premissas',
+      url: 'https://lunins.com.br/coluna-absorcao/',
+      versaoRelatorio: '2026.05.4',
+    };
+
+    function fmtExport(n, dec = 4) {
+      if (n === null || n === undefined || (typeof n === 'number' && (!isFinite(n) || isNaN(n)))) return '—';
+      if (typeof n === 'number') return n.toFixed(dec);
+      return String(n);
+    }
+
+    /**
+     * Análise narrativa para UI e exportação (texto só; sem HTML externo).
+     * @param {object} p premissas
+     * @param {object} res { A, AInerte?, N, Z, D, uOp, FLV, xOLbot }
+     * @param {{id:string,ok:boolean,msg:string}[]} checks
+     */
+    function buildAnaliseObject(p, res, checks) {
+      const nFail = checks.filter((c) => !c.ok).length;
+      const allOk = nFail === 0;
+      const yStarTop = p.m * p.x0;
+      const yStarBot = p.m * res.xOLbot;
+      const remGas = p.yin > 1e-12 ? (1 - p.yout / p.yin) * 100 : NaN;
+      const dTop = p.yout - yStarTop;
+      const dBot = p.yin - yStarBot;
+      const A = res.A;
+      const N = res.N;
+      const Z = res.Z;
+      const D = res.D;
+
+      let interpA = '';
+      if (isFinite(A)) {
+        if (A > 5) interpA = 'A elevado: termodinamicamente “fácil” retirar CO₂ com poucos pratos; confirme se o custo de L (bombeamento, tratamento de água) está alinhado com o benefício.';
+        else if (A > 1.5) interpA = 'A moderado: zona típica de projecto preliminar — o gargalo costuma passar a ser HETP real e hidráulica do recheio, não só o número de pratos.';
+        else if (A > 1.01) interpA = 'A baixo (mas >1): mais sensível a incertezas em m e HETP; revise proximidade de pinça no diagrama y–x e dados VLE.';
+        else if (isFinite(res.AInerte) && res.AInerte > 1.01 && p.yin > 0.25) {
+          interpA = `A = (L/G)/m ≈ ${fmtExport(A)} na base (y,x) mol total; com y_ent elevado o indicador coerente com a planilha do grupo é A_inerte = (L′/V′)/m ≈ ${fmtExport(res.AInerte)}. O N da ferramenta continua a usar Kremser/McCabe em (y,x) — validar com bases Y,X ou Aspen.`;
+        } else interpA = 'A ≤ 1 na formulação (y,x): risco de o Kremser/McCabe linear não representar bem o caso — rever m, L/G ou usar simulador rigoroso.';
+      }
+
+      let interpN = '';
+      if (isFinite(N)) {
+        if (N < 1.2) interpN = 'N < ~1,2 sugere coluna curta em termos de estágios teóricos — valide se HETP conservador não aumenta Z de forma decisiva na realidade.';
+        else if (N < 4) interpN = 'N na faixa usual de esboços de scrubber com modelo diluído; compare com experiência de campo ou simulador.';
+        else interpN = 'N elevado: muitos pratos teóricos neste modelo linear; verifique se m não está subestimado (daria pinça) ou se L/G está conservador.';
+      } else interpN = 'N não calculável: corrija checks em falha (forças motrizes, A, singularidade A=1, etc.).';
+
+      const sintese = [
+        `Cenário: gás entra com y_ent = ${fmtExport(p.yin)} (mol CO₂ / mol total) e objectivo y_sai = ${fmtExport(p.yout)}.`,
+        `Remoção relativa no gás (indicador simples): ≈ ${fmtExport(remGas, 2)} % da carga molar de CO₂ na corrente de entrada, desde que as frações molares representem bem o caso real.`,
+        `Factor de absorção A = (L/G)/m = ${fmtExport(A)}${isFinite(res.AInerte) ? `; na planilha do grupo A_inerte = (L′/V′)/m ≈ ${fmtExport(res.AInerte)} (bases inertes — ver MEMORIA).` : '.'}`,
+        `Pratos teóricos N (Kremser = McCabe linear em y,x) = ${fmtExport(N)}; altura de enchimento estimada Z = N×HETP = ${fmtExport(Z)} m com HETP = ${fmtExport(p.HETP)} m.`,
+        `Coluna: diâmetro geométrico proxy D = ${fmtExport(D)} m a u_op = ${fmtExport(res.uOp)} m/s (${fmtExport(p.fracFloodPct, 0)} % da inundante de referência).`,
+      ].join('\n');
+
+      const termodin = [
+        `Força motriz no topo (gás saí vs equilíbrio com líquido de entrada): Δy_topo = y_sai − m·x₀ = ${fmtExport(dTop)} (mol/mol).`,
+        `Força motriz no fundo (gás entrada vs equilíbrio com líquido de saída na OL): Δy_fundo = y_ent − m·x_sai,ℓ = ${fmtExport(dBot)} com x_sai,ℓ = ${fmtExport(res.xOLbot)}.`,
+        `Interpretação de A: ${interpA || '—'}`,
+        `Interpretação de N: ${interpN}`,
+      ].join('\n');
+
+      const hidraul = [
+        `FLV proxy = (L/G)·√(ρ_G/ρ_L) = ${fmtExport(res.FLV)} — útil para comunicação com o “maestro” de tubulação; não substitui cálculo de inundante com propriedades e recheio reais.`,
+        `Q_G = ${fmtExport(p.QG_m3h)} m³/h e Q_L = ${fmtExport(p.QL_m3h)} m³/h são referências volumétricas; o modelo de pratos usa L/G molar — mantenha consistência de bases ao integrar com BM global.`,
+      ].join('\n');
+
+      const confianca = [
+        `Checks automáticos: ${allOk ? 'todos satisfeitos.' : nFail + ' falha(s) — ver folha Checks no Excel.'}`,
+        `Incerteza dominante em projecto real: (1) curva de equilíbrio (m ou VLE completa), (2) HETP e hidráulica do recheio, (3) L/G e composições reais ao longo da coluna se o gás deixar de ser diluído.`,
+        isFinite(res.AInerte) && p.yin > 0.25
+          ? `Dados «ultima planilha.xlsx»: L′ e V′ fechados na aba Coluna de Absorção; HETP e Q_L da coluna continuam a melhorar (aba Purificação ausente neste ficheiro — mantém-se proxy 1668,571 m³/d ÷24).`
+          : '',
+        `Regra de ouro UX: se um número “surpreende”, altere uma de cada vez — primeiro m, depois L/G, depois HETP — e observe qual curva no diagrama McCabe se move.`,
+      ].filter(Boolean).join('\n');
+
+      const conclusoes = [];
+      if (allOk && isFinite(N) && isFinite(Z)) {
+        conclusoes.push(`Conclusão 1 — estágios: com as hipóteses actuais, são necessários cerca de N = ${fmtExport(N)} pratos teóricos (contactos gas–líquido ideais) para mover o gás de y_ent = ${fmtExport(p.yin)} até y_sai = ${fmtExport(p.yout)} com o par (L/G, m) escolhido.`);
+        conclusoes.push(`Conclusão 2 — altura: Z ≈ ${fmtExport(Z)} m resulta de Z = N·HETP com HETP = ${fmtExport(p.HETP)} m. Se o fabricante do recheio indicar outro HETP à carga real, Z escala em primeira aproximação de forma linear com N fixo.`);
+        conclusoes.push(`Conclusão 3 — diâmetro: D ≈ ${fmtExport(D)} m resume “quanto área de secção” para passar Q_G a u_op = ${fmtExport(res.uOp)} m/s; trata-se de proxy para discussão de layout, não de substituto do cálculo de inundante com a folha do recheio.`);
+        conclusoes.push(`Conclusão 4 — remoção aparente no gás: da entrada para a saída, a fração molar de CO₂ cai cerca de ${fmtExport(remGas, 2)} % em termos relativos à entrada (indicador simples; não confunde com rendimento global da planta).`);
+        if (isFinite(res.AInerte) && A <= 1.01 && res.AInerte > 1.01 && p.yin > 0.25) {
+          conclusoes.push(`Nota — alinhamento planilha: com y_ent elevado, A = (L/G)/m na base (y,x) pode ser ≤ 1 enquanto A_inerte = (L′/V′)/m da «ultima planilha» é > 1. O N e o McCabe desta página permanecem na malha (y,x) com L/G = (y_ent − y_sai)/x_sai,ℓ; para relatório executivo, cruzar com Y/X ou Aspen/HYSYS.`);
+        }
+      } else {
+        conclusoes.push('Conclusão: o cenário não está fechado do ponto de vista dos checks. Corrija as premissas destacadas antes de usar N, Z ou D em relatório ou em comparativo com Aspen.');
+      }
+
+      const vsSim = [
+        'Paridade com Aspen Plus / Aspen HYSYS (no nosso caso: scrubber diluído, estágios de equilíbrio, Henry linear):',
+        '• O que já reproduzimos ao nível de um bom primeiro RadFrac/Column: reta de operação, McCabe–Thiele, Kremser, N, conversão Z = N·HETP, e um D geométrico simples.',
+        '• O que continua exclusivo do simulador: EOS e não-idealidade, MESH/rate-based, perfis de T e P, eficiência de prato, folhas de fabricante embutidas, optimização económica e emissões reguladas.',
+        '• Leitura honesta: atingimos o melhor nível possível para uma aplicação Web educativa neste nicho — não o “Aspen completo” num ficheiro HTML.',
+      ].join('\n');
+
+      const blocos = [
+        { titulo: 'Síntese', cardClass: 'border-l-4 border-emerald-500 bg-slate-900/60 border-slate-700', texto: sintese },
+        { titulo: 'Termodinâmica e estágios', cardClass: 'border-l-4 border-sky-500 bg-slate-900/60 border-slate-700', texto: termodin },
+        { titulo: 'Hidráulica e integração', cardClass: 'border-l-4 border-amber-500 bg-slate-900/60 border-slate-700', texto: hidraul },
+        { titulo: 'Conclusões (para relatório ou aula)', cardClass: 'border-l-4 border-teal-500 bg-slate-900/60 border-slate-700', texto: conclusoes.join('\n\n') },
+        { titulo: 'Aspen / HYSYS — paridade e limites', cardClass: 'border-l-4 border-indigo-500 bg-slate-900/60 border-slate-700', texto: vsSim },
+        { titulo: 'Confiabilidade e limites do modelo', cardClass: 'border-l-4 border-violet-500 bg-slate-900/60 border-slate-700', texto: confianca },
+      ];
+
+      if (!allOk) {
+        const falhas = checks.filter((c) => !c.ok).map((c) => `• ${c.msg}`).join('\n');
+        blocos.unshift({
+          titulo: 'Atenção — corrigir premissas',
+          cardClass: 'border-l-4 border-red-500 bg-red-950/30 border-red-900/50',
+          texto: `Antes de usar Z, D ou N em documento oficial, resolva:\n${falhas}`,
+        });
+      }
+
+      return {
+        statusLabel: allOk ? 'Cenário coerente' : `${nFail} verificação(ões) em falha`,
+        statusClass: allOk
+          ? 'border-emerald-500/80 text-emerald-300 bg-emerald-950/30'
+          : 'border-amber-500/80 text-amber-200 bg-amber-950/30',
+        blocos,
+        nFail,
+        allOk,
+      };
+    }
+
+    function sheetFromAoa(aoa, colWch, freezeY) {
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      if (colWch && colWch.length) ws['!cols'] = colWch.map((w) => ({ wch: w }));
+      if (freezeY != null && freezeY > 0) {
+        ws['!views'] = [{ state: 'frozen', ySplit: freezeY, topLeftCell: XLSX.utils.encode_cell({ r: freezeY, c: 0 }) }];
+      }
+      return ws;
+    }
+
+    function rowsSumarioKpi(p, res) {
+      const rows = [
+        ['Indicador', 'Valor', 'Unidade / nota'],
+        ['A = (L/G)/m', fmtExport(res.A), '—'],
+      ];
+      if (isFinite(res.AInerte)) {
+        rows.push(['A_inerte = (L′/V′)/m', fmtExport(res.AInerte), '— (planilha)']);
+      }
+      rows.push(
+        ['N (pratos teóricos)', fmtExport(res.N), 'Kremser = McCabe linear (y,x)'],
+        ['Z = N·HETP', fmtExport(res.Z), 'm'],
+        ['D (proxy)', fmtExport(res.D), 'm'],
+        ['u_oper', fmtExport(res.uOp), 'm/s'],
+        ['FLV proxy', fmtExport(res.FLV), '—'],
+        ['x_sai,ℓ (OL)', fmtExport(res.xOLbot), 'mol/mol'],
+        ['Remoção CO₂ no gás (1−y_sai/y_ent)', fmtExport(p.yin > 0 ? (1 - p.yout / p.yin) * 100 : NaN, 2), '% molar relativa'],
+        ['Δy topo (y_sai − m·x₀)', fmtExport(p.yout - p.m * p.x0), 'mol/mol'],
+        ['Δy fundo (y_ent − m·x_sai,ℓ)', fmtExport(p.yin - p.m * res.xOLbot), 'mol/mol'],
+      );
+      return rows;
+    }
+
+    function colunaApp() {
+      return {
+        p: {
+          yin: 0.38,
+          yout: 0.02,
+          m: 0.35,
+          LG: 2.5,
+          x0: 0,
+          HETP: 0.6,
+          QG_m3h: G23_PROXY_Nm3d / 24,
+          QL_m3h: 1668.571 / 24,
+          rhoL: 1000,
+          rhoG: 1.15,
+          uFlood: 1.05,
+          fracFloodPct: 70,
+          P_col_Pa: 350000,
+          T_C: 25,
+          Lprime: null,
+          Vprime: null,
+        },
+        r: { A: NaN, AInerte: NaN, N: NaN, Z: NaN, D: NaN, uOp: NaN, FLV: NaN, xOLbot: NaN, mctLegend: '', checks: [], mct: { sx: [], sy: [] }, analise: { statusLabel: '', statusClass: '', blocos: [] } },
+        graphsExpanded: false,
+
+        init() { this.recalc(); },
+
+        fmt(x) {
+          if (x === null || x === undefined || (typeof x === 'number' && (isNaN(x) || !isFinite(x)))) return '—';
+          if (typeof x === 'number') return (Math.abs(x) >= 100 ? x.toFixed(1) : x.toFixed(4)).replace(/\.?0+$/, '');
+          return String(x);
+        },
+
+        presetLunins() {
+          this.p = {
+            yin: 0.38,
+            yout: 0.02,
+            m: 0.35,
+            LG: 2.5,
+            x0: 0,
+            HETP: 0.6,
+            QG_m3h: G23_PROXY_Nm3d / 24,
+            QL_m3h: 1668.571 / 24,
+            rhoL: 1000,
+            rhoG: 1.15,
+            uFlood: 1.05,
+            fracFloodPct: 70,
+            P_col_Pa: 350000,
+            T_C: 25,
+            Lprime: null,
+            Vprime: null,
+          };
+          this.recalc();
+        },
+
+        presetPlanilhaUltima() {
+          const pl = PLANILHA_ULTIMA_COLUNA;
+          const LG = (pl.y_ent - pl.y_sai) / pl.x_sai_liq;
+          this.p = {
+            yin: pl.y_ent,
+            yout: pl.y_sai,
+            m: pl.m_eq,
+            LG,
+            x0: pl.x0,
+            HETP: 0.6,
+            QG_m3h: G23_PROXY_Nm3d / 24,
+            QL_m3h: 1668.571 / 24,
+            rhoL: 1000,
+            rhoG: 1.15,
+            uFlood: 1.05,
+            fracFloodPct: 70,
+            P_col_Pa: 350000,
+            T_C: 25,
+            Lprime: pl.Lprime_mol_h,
+            Vprime: pl.Vprime_mol_h,
+          };
+          this.recalc();
+        },
+
+        compute() {
+          const p = this.p;
+          const A = p.LG / p.m;
+          const AInerte = (p.Lprime > 0 && p.Vprime > 0 && p.m > 0) ? (p.Lprime / p.Vprime) / p.m : NaN;
+          const xOLbot = p.x0 + (p.yin - p.yout) / p.LG;
+          const mct = buildMcCabeStair(p);
+          const yStar0 = p.m * p.x0;
+          let N = NaN;
+          if (p.m > 0 && p.LG > 0 && Math.abs(A - 1) >= 1e-6) {
+            const num = p.yin - yStar0;
+            const den = p.yout - yStar0;
+            if (den > 1e-14 && num > 0) {
+              const term = (num / den) * (1 - 1 / A) + 1 / A;
+              if (term > 0 && A > 0) N = Math.log(term) / Math.log(A);
+            }
+          }
+          const Z = isFinite(N) ? N * p.HETP : NaN;
+          const uOp = (p.fracFloodPct / 100) * p.uFlood;
+          const Qs = p.QG_m3h / 3600;
+          const D = uOp > 0 && Qs > 0 ? Math.sqrt((4 * Qs) / (Math.PI * uOp)) : NaN;
+          const FLV = p.LG * Math.sqrt(p.rhoG / p.rhoL);
+
+          const inerteOk = isFinite(AInerte) && AInerte > 1.01;
+          const gasConcentrado = p.yin > 0.25;
+
+          let mctLegend = '';
+          if (isFinite(N)) {
+            mctLegend = `Reta de operação: (${p.x0.toFixed(5)}, ${p.yout.toFixed(4)}) → (${xOLbot.toFixed(5)}, ${p.yin.toFixed(4)}). N (Kremser, y* = m x₀ nos termos de condução) = ${N.toFixed(4)} — com y* = m x e L/G constantes coincide com o número de pratos do McCabe–Thiele.`;
+            if (gasConcentrado && inerteOk && !(A > 1.01)) {
+              mctLegend += ` Atenção: A=(L/G)/m < 1 na base (y,x) com gás concentrado; na «ultima planilha» A_inerte=(L′/V′)/m ≈ ${AInerte.toFixed(2)} — validar N com bases Y,X ou simulador.`;
+            }
+          } else {
+            mctLegend = 'Parâmetros fora do domínio da fórmula de Kremser (ver checks).';
+          }
+
+          const checks = [];
+          checks.push({ id: 'y_frac', ok: p.yin > p.yout && p.yin < 1 && p.yout > 0, msg: 'y_ent > y_sai e frações no intervalo (0,1)' });
+          checks.push({
+            id: 'A',
+            ok: A > 1.01 || (gasConcentrado && inerteOk),
+            msg: A > 1.01
+              ? 'A = (L/G)/m > 1 (separação com equilíbrio linear neste modelo)'
+              : `A = (L/G)/m = ${A.toFixed(3)} ≤ 1 na base (y,x); com y_ent elevado compare A_inerte = (L′/V′)/m da planilha (≈ ${isFinite(AInerte) ? AInerte.toFixed(2) : '—'}) — ver MEMORIA.`,
+          });
+          checks.push({ id: 'A1', ok: Math.abs(A - 1) >= 1e-6, msg: 'A não pode ser 1 (singularidade em ln)' });
+          checks.push({
+            id: 'LGm',
+            ok: p.LG > p.m * 1.002 || (gasConcentrado && inerteOk),
+            msg: 'L/G > m (reta OL acima da equilíbrio y = m x no gráfico y,x) OU gás concentrado com A_inerte>1 (planilha)',
+          });
+          checks.push({ id: 'drv_top', ok: p.yout > yStar0 + 1e-6, msg: 'y_sai > m x₀ (força motriz no topo; senão aumente L/G ou reduza x₀ / meta y_sai)' });
+          checks.push({ id: 'drv_bot', ok: p.yin > p.m * xOLbot + 1e-6, msg: 'y_ent > m x_sai,ℓ com x_sai,ℓ = x₀ + (y_ent − y_sai)/(L/G) na reta OL' });
+          checks.push({ id: 'N', ok: isFinite(N) && N > 0, msg: 'N finito e positivo' });
+          checks.push({ id: 'm', ok: p.m > 0, msg: 'm > 0' });
+          checks.push({ id: 'hetp', ok: p.HETP > 0, msg: 'HETP > 0' });
+          checks.push({ id: 'QG', ok: p.QG_m3h > 0, msg: 'Q_G > 0' });
+          checks.push({ id: 'QL', ok: p.QL_m3h > 0, msg: 'Q_L água > 0 (referência Purificação)' });
+          checks.push({ id: 'uop', ok: uOp > 0, msg: 'u_oper > 0' });
+          checks.push({ id: 'x0', ok: p.x0 >= 0 && p.x0 < 0.5, msg: 'x₀ ∈ [0, 0.5) — fração molar CO₂ no líquido ao topo' });
+          const resCompact = { A, AInerte, N, Z, D, uOp, FLV, xOLbot };
+          const analise = buildAnaliseObject(p, resCompact, checks);
+          return { A, AInerte, N, Z, D, uOp, FLV, xOLbot, mctLegend, checks, mct, analise };
+        },
+
+        recalc() {
+          this.r = this.compute();
+          this.$nextTick(() => { this.plotYx(); this.plotMcCabe(); });
+        },
+
+        plotYx() {
+          const p = this.p;
+          const r = this.r;
+          const m = p.m;
+          const x0 = p.x0;
+          const xBot = r.xOLbot;
+          if (!isFinite(xBot)) return;
+          const xMin = Math.min(0, x0, xBot) * 1;
+          const xMax = Math.max(xBot, p.yout / m, 1e-5) * 1.12;
+          const nPts = 48;
+          const xs = [];
+          const yeq = [];
+          for (let i = 0; i <= nPts; i++) {
+            const x = xMin + (xMax - xMin) * (i / nPts);
+            xs.push(x);
+            yeq.push(m * x);
+          }
+          const data = [
+            { x: xs, y: yeq, mode: 'lines', name: 'Equilíbrio y* = m x', line: { color: '#38bdf8', width: 2 } },
+            { x: [x0, xBot], y: [p.yout, p.yin], mode: 'lines+markers', name: 'Reta operação (balanço)', line: { color: '#fbbf24', width: 2 }, marker: { size: 8, color: '#fbbf24' } },
+          ];
+          const layout = {
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(15,23,42,0.9)',
+            font: { color: '#94a3b8', size: 11 },
+            title: { text: 'y–x (reta OL: cantos (x₀, y_sai) e (x_sai,ℓ, y_ent))', font: { size: 14, color: '#e2e8f0' } },
+            xaxis: { title: 'x (fração molar CO₂ no líquido)', gridcolor: '#334155', zeroline: true, zerolinecolor: '#475569' },
+            yaxis: { title: 'y (fração molar CO₂ no gás)', gridcolor: '#334155', zeroline: true, zerolinecolor: '#475569' },
+            margin: { t: 48, b: 44, l: 52, r: 16 },
+            showlegend: true,
+            legend: { orientation: 'h', y: -0.22 },
+          };
+          if (typeof Plotly !== 'undefined') Plotly.react('plot-yx', data, layout, { displayModeBar: false, responsive: true });
+        },
+
+        plotMcCabe() {
+          const p = this.p;
+          const r = this.r;
+          const m = p.m;
+          const x0 = p.x0;
+          const xBot = r.xOLbot;
+          const st = r.mct || { sx: [], sy: [] };
+          if (!isFinite(xBot) || typeof Plotly === 'undefined') return;
+          const xMax = Math.max(xBot, p.yin / m, p.yout / m, 1e-5) * 1.12;
+          const xMin = Math.min(0, x0, xBot) * 1;
+          const nPts = 60;
+          const xs = [];
+          const yeq = [];
+          for (let i = 0; i <= nPts; i++) {
+            const x = xMin + (xMax - xMin) * (i / nPts);
+            xs.push(x);
+            yeq.push(m * x);
+          }
+          const data = [
+            { x: xs, y: yeq, mode: 'lines', name: 'Equilíbrio y* = m x', line: { color: '#38bdf8', width: 2 } },
+            { x: [x0, xBot], y: [p.yout, p.yin], mode: 'lines', name: 'Reta operação', line: { color: '#fbbf24', width: 2 } },
+            { x: st.sx, y: st.sy, mode: 'lines', name: 'Degraus McCabe', line: { color: '#c4b5fd', width: 2, shape: 'linear' } },
+            { x: [xBot], y: [p.yin], mode: 'markers', name: 'Fundo OL', marker: { size: 11, color: '#34d399', line: { width: 1, color: '#fff' } } },
+            { x: [x0], y: [p.yout], mode: 'markers', name: 'Topo OL', marker: { size: 11, color: '#f472b6', line: { width: 1, color: '#fff' } } },
+          ];
+          const ann = [];
+          if (isFinite(r.N)) {
+            ann.push({
+              xref: 'paper', yref: 'paper', x: 0.02, y: 0.97, showarrow: false,
+              text: '<b>N</b> (Kremser = McCabe, linear) = ' + r.N.toFixed(4),
+              font: { color: '#e2e8f0', size: 13 },
+              align: 'left',
+            });
+          }
+          let yHi = 0.5;
+          for (let i = 0; i < st.sy.length; i++) if (isFinite(st.sy[i])) yHi = Math.max(yHi, st.sy[i]);
+          yHi = Math.min(1.15, Math.max(yHi, p.yin, p.yout) * 1.1 + 0.02);
+          const layout = {
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(15,23,42,0.9)',
+            font: { color: '#94a3b8', size: 11 },
+            title: { text: 'McCabe–Thiele — degraus entre equilíbrio e operação', font: { size: 14, color: '#ede9fe' } },
+            xaxis: { title: 'x (líquido)', gridcolor: '#334155', range: [xMin, xMax] },
+            yaxis: { title: 'y (gás)', gridcolor: '#334155', range: [0, yHi] },
+            margin: { t: 52, b: 48, l: 52, r: 18 },
+            showlegend: true,
+            legend: { orientation: 'h', y: -0.28 },
+            annotations: ann,
+          };
+          Plotly.react('plot-mct', data, layout, { displayModeBar: true, responsive: true });
+        },
+
+        toggleGraphExpand() {
+          this.graphsExpanded = !this.graphsExpanded;
+          this.$nextTick(() => {
+            if (typeof Plotly === 'undefined' || !Plotly.Plots) return;
+            ['plot-yx', 'plot-mct'].forEach((id) => {
+              const gd = document.getElementById(id);
+              if (gd) Plotly.Plots.resize(gd);
+            });
+          });
+        },
+
+        async downloadPlotPng(divId, baseName) {
+          const gd = document.getElementById(divId);
+          if (!gd || typeof Plotly === 'undefined') {
+            alert('Gráfico indisponível.');
+            return;
+          }
+          const h = divId === 'plot-mct' ? 900 : 720;
+          const w = divId === 'plot-mct' ? 1200 : 1000;
+          try {
+            await Plotly.downloadImage(gd, { format: 'png', width: w, height: h, filename: baseName });
+          } catch (e) {
+            alert('Erro ao gerar PNG: ' + e);
+          }
+        },
+
+        rowsFiguras() {
+          const stamp = new Date().toISOString();
+          return [
+            ['Figuras — procedimento e rastreio'],
+            [''],
+            ['URL da ferramenta', EXPORT_META.url],
+            ['Versão do relatório', EXPORT_META.versaoRelatorio],
+            ['Timestamp (UTC)', stamp],
+            [''],
+            ['Instruções'],
+            ['1', 'Abrir a URL; ajustar premissas (sliders) ao cenário do relatório.'],
+            ['2', 'Na secção «Diagramas», usar «PNG y–x» e «PNG McCabe» (Plotly.downloadImage).'],
+            ['2b', 'Preset «ultima planilha»: dados em «ultima planilha.xlsx» / Coluna de Absorção (commit no repositório).'],
+            ['3', 'Anexar os PNG à memória como Fig. A (y–x) e Fig. B (McCabe); valores KPI permanecem na folha Sumario.'],
+            [''],
+            ['Nota'],
+            ['Excel', 'Esta pasta não embute binários PNG (ficheiro leve); PNG obtém-se no browser.'],
+            ['Acessibilidade', 'Mantenha tabela Sumario para quem não consome só gráficos.'],
+          ];
+        },
+
+        saveLocal() {
+          try {
+            localStorage.setItem(LS_KEY, JSON.stringify({ p: this.p, ts: Date.now() }));
+            alert('Cenário guardado no browser.');
+          } catch (e) { alert('Erro ao guardar: ' + e); }
+        },
+        loadLocal() {
+          try {
+            const raw = localStorage.getItem(LS_KEY);
+            if (!raw) { alert('Nada guardado.'); return; }
+            const o = JSON.parse(raw);
+            if (o.p) { this.p = { ...this.p, ...o.p }; this.recalc(); alert('Carregado.'); }
+          } catch (e) { alert('Erro: ' + e); }
+        },
+        exportJson() {
+          const blob = new Blob([JSON.stringify({
+            meta: EXPORT_META,
+            export: 'lunins_coluna',
+            ts: Date.now(),
+            p: this.p,
+            r: this.r,
+            analise: this.r.analise,
+          }, null, 2)], { type: 'application/json' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'coluna_lunins_cenario.json';
+          a.click();
+          URL.revokeObjectURL(a.href);
+        },
+        importJson(ev) {
+          const f = ev.target.files[0];
+          if (!f) return;
+          const rd = new FileReader();
+          rd.onload = () => {
+            try {
+              const o = JSON.parse(rd.result);
+              if (o.p) { this.p = { ...this.p, ...o.p }; this.recalc(); alert('JSON importado.'); }
+            } catch (e) { alert('JSON inválido: ' + e); }
+            ev.target.value = '';
+          };
+          rd.readAsText(f);
+        },
+
+        rowsPremissas() {
+          const p = this.p;
+          const rows = [
+            ['Campo', 'Valor', 'Unidade', 'Nota'],
+            ['y_CO2_in', p.yin, 'mol/mol', 'fração molar'],
+            ['y_CO2_out', p.yout, 'mol/mol', 'meta'],
+            ['m', p.m, '-', 'y*=mx; calibrar VLE'],
+            ['x0_liquido_topo', p.x0, 'mol/mol', 'McCabe/Kremser'],
+            ['L/G', p.LG, 'mol/mol', 'Kremser (pendente total vs inerte)'],
+            ['HETP', p.HETP, 'm', 'recheio — PENDENTE folha fabricante'],
+            ['Q_G', p.QG_m3h, 'm3/h', 'proxy BM!G23/24'],
+            ['Q_L_agua', p.QL_m3h, 'm3/h', '1668,571/24 se maestro ausente'],
+            ['G23_proxy_Nm3d', G23_PROXY_Nm3d, 'Nm3/dia', 'BM!G23'],
+            ['rho_L', p.rhoL, 'kg/m3', ''],
+            ['rho_G', p.rhoG, 'kg/m3', ''],
+            ['u_flood', p.uFlood, 'm/s', 'referência'],
+            ['frac_inundante', p.fracFloodPct, '%', ''],
+            ['P_coluna', p.P_col_Pa, 'Pa', 'contexto'],
+            ['T', p.T_C, 'degC', ''],
+          ];
+          if (p.Lprime > 0 && p.Vprime > 0) {
+            rows.push(['Lprime_mol_h', p.Lprime, 'mol/h', PLANILHA_ULTIMA_COLUNA.ficheiro + ' ' + PLANILHA_ULTIMA_COLUNA.aba]);
+            rows.push(['Vprime_mol_h', p.Vprime, 'mol/h', PLANILHA_ULTIMA_COLUNA.ficheiro + ' ' + PLANILHA_ULTIMA_COLUNA.aba]);
+          }
+          return rows;
+        },
+        rowsResultados() {
+          const r = this.r;
+          const rows = [
+            ['Grandeza', 'Valor', 'Unidade', 'Formula_ref'],
+            ['A', r.A, '-', '(L/G)/m'],
+          ];
+          if (isFinite(r.AInerte)) rows.push(['A_inerte', r.AInerte, '-', "(L'/V')/m planilha"]);
+          rows.push(
+            ['x_sai_liq_OL', r.xOLbot, 'mol/mol', 'x0 + (y_ent - y_sai)/(L/G)'],
+            ['N_Kremser_McCabe', r.N, '-', 'ln(((y_ent-m x0)/(y_sai-m x0))(1-1/A)+1/A)/ln(A)'],
+            ['Z', r.Z, 'm', 'N*HETP'],
+            ['u_oper', r.uOp, 'm/s', 'frac*u_flood'],
+            ['D_coluna', r.D, 'm', 'sqrt(4Q/(pi u))'],
+            ['FLV_proxy', r.FLV, '-', 'LG*sqrt(rhoG/rhoL) maestro'],
+          );
+          return rows;
+        },
+        rowsRastreio() {
+          const p = this.p;
+          const r = this.r;
+          const f4 = (v) => (typeof v === 'number' && isFinite(v)) ? v.toFixed(4) : '—';
+          const f5 = (v) => (typeof v === 'number' && isFinite(v)) ? v.toFixed(5) : '—';
+          const src = (p.Lprime > 0 && p.Vprime > 0)
+            ? '«ultima planilha.xlsx» / Coluna de Absorção (R62–R66 + coluna O/N)'
+            : 'Preset + sliders didáticos';
+          return [
+            ['y_ent (gás)', f4(p.yin), 'Gasometria / GC / simulador de biogás', src, p.Lprime ? 'Alta se célula fechada' : 'Média sem dados de campo'],
+            ['y_sai (gás)', f4(p.yout), 'Meta de purificação / contrato', src, 'Negocial / técnica'],
+            ['m em y* = m x', f4(p.m), 'VLE CO₂–água a (T,P); revisões Henry', p.Lprime ? 'Coluna O÷N da planilha (206)' : 'Maestro Dimensionamento_Scrubber', p.Lprime ? 'Média (recta global na grelha)' : 'Baixa a média (recta substitui curva)'],
+            ['L/G molar (ferramenta)', f4(p.LG), 'Balanço molar correntes L e G reais', p.Lprime ? 'Derivado de (y_ent−y_sai)/x_sai,ℓ planilha' : 'Planilha Purificacao_Biometano / maestro', 'Média — cruzar com L′/V′'],
+            ['L′/V′ (inertes)', (p.Lprime > 0 && p.Vprime > 0) ? f4(p.Lprime / p.Vprime) : '—', 'Seader — bases soluto-livre', '«ultima planilha» C62/C63', p.Lprime ? 'Alta (células fechadas)' : 'PENDENTE'],
+            ['x₀ (líquido ao topo)', f5(p.x0), 'Análise do líquido de entrada no topo', 'Água fresca → 0', 'Alta se água pura'],
+            ['x_sai,ℓ na OL', f5(r.xOLbot), 'Amostra de fundo ou balanço global', 'x₀ + (y_ent − y_sai)/(L/G)', 'Algébrica das premissas'],
+            ['HETP', f4(p.HETP), 'Curva do fabricante a F, T, L/G', 'Não consta na «ultima planilha» — valor típico', 'Baixa — A MELHORAR com folha de recheio'],
+            ['Q_G', f4(p.QG_m3h), 'Medição de caudal ou BM global', 'BM!G23/24 (7342,854 Nm³/dia)', 'Média (proxy documentado)'],
+            ['Q_L água', f4(p.QL_m3h), 'Purificacao_Biometano B12', '1668,571 m³/d ÷24 (maestro referência)', 'Média — aba Purificação ausente neste ficheiro'],
+            ['u_flood', f4(p.uFlood), 'Correlação inund / GPDC (Kister)', 'Referência / maestro', 'Média'],
+          ];
+        },
+        rowsReferencias() {
+          return [
+            ['Referencia', 'Uso'],
+            ['McCabe, Smith, Harriot — Unit Operations of Chemical Engineering', 'Degraus McCabe–Thiele em absorção'],
+            ['Seader, Henley, Roper — Separation Process Principles', 'Operacao absorcao, L/G, estagios, Kremser'],
+            ['Treybal — Mass Transfer Operations', 'Kremser diluido'],
+            ['Perry Chemical Engineers Handbook', 'VLE, HETP, hidraulica'],
+            ['Kister — Distillation Design', 'GPDC / inundacao (analogia recheio)'],
+            ['ISO 6976', 'Gases composicao'],
+            ['Carroll / Duan & Sun (Henry CO2-H2O)', 'm(T,P) rigoroso — pendente'],
+          ];
+        },
+        rowsAnaliseExport() {
+          const a = this.r.analise;
+          const rows = [
+            ['Secção', 'Conteúdo'],
+            ['Estado global (checks)', a?.statusLabel || '—'],
+            ['', ''],
+          ];
+          (a?.blocos || []).forEach((b) => {
+            rows.push([b.titulo, b.texto]);
+            rows.push(['', '']);
+          });
+          return rows;
+        },
+        rowsPremissasExcel() {
+          return this.rowsPremissas().map((row, i) => {
+            if (i === 0) return row;
+            const v = row[1];
+            const val = typeof v === 'number' && isFinite(v) ? fmtExport(v, 6) : v;
+            return [row[0], val, row[2], row[3]];
+          });
+        },
+        rowsResultadosExcel() {
+          return this.rowsResultados().map((row, i) => {
+            if (i === 0) return row;
+            const v = row[1];
+            const val = typeof v === 'number' && isFinite(v) ? fmtExport(v, 6) : v;
+            return [row[0], val, row[2], row[3]];
+          });
+        },
+        rowsChecks() {
+          return this.r.checks.map((c) => [c.id, c.ok ? 'OK' : 'FALHA', c.msg]);
+        },
+
+        exportCsv() {
+          const sep = ';';
+          const stamp = new Date().toISOString();
+          const stampFile = stamp.replace(/[:.]/g, '-').slice(0, 19);
+          const lines = [];
+          const pushRow = (row) => lines.push(Array.isArray(row) ? row.join(sep) : row);
+          pushRow('Coluna de absorção — Lunins | CSV relatório profissional');
+          pushRow(`Gerado (UTC);${stamp};URL;${EXPORT_META.url};Versão;${EXPORT_META.versaoRelatorio}`);
+          pushRow('');
+          pushRow('=== SUMÁRIO — KPI ===');
+          rowsSumarioKpi(this.p, this.r).forEach(pushRow);
+          pushRow('');
+          pushRow('=== ANÁLISE EXECUTIVA ===');
+          this.rowsAnaliseExport().forEach(pushRow);
+          pushRow('');
+          pushRow('=== PREMISSAS ===');
+          this.rowsPremissasExcel().forEach(pushRow);
+          pushRow('');
+          pushRow('=== RESULTADOS ===');
+          this.rowsResultadosExcel().forEach(pushRow);
+          pushRow('');
+          pushRow('=== RASTREIO (FONTES) ===');
+          pushRow(['Grandeza', 'Valor atual', 'Fonte ideal', 'Fonte Lunins v1', 'Confiança'].join(sep));
+          this.rowsRastreio().forEach(pushRow);
+          pushRow('');
+          pushRow('=== CHECKS ===');
+          pushRow(['id', 'estado', 'mensagem'].join(sep));
+          this.rowsChecks().forEach(pushRow);
+          pushRow('');
+          pushRow('=== FIGURAS (PNG + folha Excel Figuras) ===');
+          pushRow(['Procedimento', 'Na página: botões PNG y–x e McCabe na secção Diagramas; export Excel inclui folha Figuras com URL e instruções.'].join(sep));
+          pushRow('');
+          pushRow('=== Rodapé rastreável ===');
+          pushRow(['URL', EXPORT_META.url, 'UTC', stamp, 'Versão', EXPORT_META.versaoRelatorio].join(sep));
+          const txt = '\uFEFF' + lines.join('\r\n');
+          const blob = new Blob([txt], { type: 'text/csv;charset=utf-8' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `coluna_lunins_relatorio_${stampFile}.csv`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+        },
+
+        exportXlsx() {
+          if (typeof XLSX === 'undefined') {
+            alert('Biblioteca XLSX não carregou (verifique CDN / rede).');
+            return;
+          }
+          const stamp = new Date().toISOString().replace(/[:]/g, '-').slice(0, 19);
+          const wb = XLSX.utils.book_new();
+          const capa = [
+            [EXPORT_META.titulo],
+            [EXPORT_META.subtitulo],
+            [],
+            ['URL', EXPORT_META.url, ''],
+            ['Versão do relatório', EXPORT_META.versaoRelatorio, ''],
+            ['Data e hora (UTC)', new Date().toISOString(), ''],
+            [],
+            ['— Painel de indicadores —', '', ''],
+            [],
+            ...rowsSumarioKpi(this.p, this.r),
+          ];
+          wb.SheetNames.push('Sumario');
+          wb.Sheets.Sumario = sheetFromAoa(capa, [58, 36, 14], null);
+
+          wb.SheetNames.push('Analise');
+          wb.Sheets.Analise = sheetFromAoa(this.rowsAnaliseExport(), [26, 84], 1);
+
+          wb.SheetNames.push('Resultados');
+          wb.Sheets.Resultados = sheetFromAoa(this.rowsResultadosExcel(), [24, 16, 12, 44], 1);
+
+          wb.SheetNames.push('Premissas');
+          wb.Sheets.Premissas = sheetFromAoa(this.rowsPremissasExcel(), [22, 16, 12, 48], 1);
+
+          wb.SheetNames.push('Rastreio');
+          wb.Sheets.Rastreio = sheetFromAoa(
+            [['Grandeza', 'Valor atual', 'Fonte ideal', 'Fonte Lunins v1', 'Confiança'], ...this.rowsRastreio()],
+            [22, 14, 36, 34, 18],
+            1,
+          );
+
+          wb.SheetNames.push('Referencias');
+          wb.Sheets.Referencias = sheetFromAoa(this.rowsReferencias(), [46, 50], 1);
+
+          wb.SheetNames.push('Checks');
+          wb.Sheets.Checks = sheetFromAoa([['id', 'estado', 'mensagem'], ...this.rowsChecks()], [14, 10, 52], 1);
+
+          wb.SheetNames.push('Figuras');
+          wb.Sheets.Figuras = sheetFromAoa(this.rowsFiguras(), [12, 72], 1);
+
+          XLSX.writeFile(wb, `coluna_lunins_relatorio_${stamp}.xlsx`);
+        },
+      };
+    }
+  </script>
+</body>
+</html>
