@@ -1,0 +1,1955 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memorial de Cálculo — Bombas &amp; Dessecador | ECOGAS</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        bg: '#0f172a',
+        card: '#1e293b',
+        accent: '#38bdf8',
+        ok: '#22c55e',
+        warn: '#f59e0b',
+        danger: '#ef4444',
+        muted: '#94a3b8',
+      }
+    }
+  }
+}
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  body { font-family: 'Inter', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
+  code, .mono { font-family: 'JetBrains Mono', monospace; }
+  .formula-box { background: #1a2744; border-left: 4px solid #38bdf8; }
+  .intuition-box { background: #1a2332; border-left: 4px solid #f59e0b; }
+  .verify-box { background: #0f2918; border-left: 4px solid #22c55e; }
+  .danger-box { background: #2a1215; border-left: 4px solid #ef4444; }
+  .pump-header { background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%); }
+  .toc-link { transition: all 0.2s; }
+  .toc-link:hover { color: #38bdf8; padding-left: 4px; }
+  .toc-active { color: #38bdf8; border-left: 2px solid #38bdf8; padding-left: 8px; }
+  table { border-collapse: collapse; }
+  th { background: #334155; }
+  td, th { padding: 8px 12px; border: 1px solid #475569; }
+  tr:nth-child(even) { background: #1e293b; }
+  tr:nth-child(odd) { background: #0f172a; }
+  .katex-like { font-style: italic; }
+  sup { font-size: 0.7em; vertical-align: super; }
+  sub { font-size: 0.7em; vertical-align: sub; }
+
+  /* Floating TOC */
+  #toc-sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: 280px;
+    background: #0b1120; border-right: 1px solid #1e293b;
+    overflow-y: auto; z-index: 50; padding: 1rem;
+    scrollbar-width: thin; scrollbar-color: #334155 #0b1120;
+  }
+  #toc-sidebar::-webkit-scrollbar { width: 6px; }
+  #toc-sidebar::-webkit-scrollbar-track { background: #0b1120; }
+  #toc-sidebar::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  #main-content { margin-left: 280px; }
+
+  /* Print styles */
+  @media print {
+    body { background: white !important; color: black !important; font-size: 10pt; }
+    #toc-sidebar { display: none !important; }
+    #main-content { margin-left: 0 !important; }
+    .formula-box, .intuition-box, .verify-box, .danger-box {
+      border-left-width: 3px !important;
+      background: #f8f8f8 !important;
+      color: black !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .formula-box { border-left-color: #2563eb !important; }
+    .intuition-box { border-left-color: #d97706 !important; }
+    .verify-box { border-left-color: #16a34a !important; }
+    .danger-box { border-left-color: #dc2626 !important; }
+    table { font-size: 9pt; }
+    th { background: #ddd !important; color: black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    td { border-color: #999 !important; }
+    tr:nth-child(even) { background: #f0f0f0 !important; }
+    tr:nth-child(odd) { background: white !important; }
+    .pump-header { background: #e0e7ff !important; color: black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    h1, h2, h3, h4 { color: black !important; }
+    .text-accent, .text-sky-400 { color: #2563eb !important; }
+    .text-ok, .text-green-400 { color: #16a34a !important; }
+    .text-warn, .text-amber-400 { color: #d97706 !important; }
+    .bg-card, .bg-slate-800, .bg-slate-900 { background: white !important; }
+    a { color: #2563eb !important; }
+    .no-print { display: none !important; }
+    @page { margin: 1.5cm; size: A4; }
+    h2 { page-break-before: always; }
+    .no-break { page-break-inside: avoid; }
+  }
+
+  /* Responsive: hide sidebar on small screens */
+  @media (max-width: 1024px) {
+    #toc-sidebar { display: none; }
+    #main-content { margin-left: 0 !important; }
+  }
+
+  /* Smooth scroll */
+  html { scroll-behavior: smooth; }
+</style>
+</head>
+<body class="dark">
+
+<!-- ==================== TOC SIDEBAR ==================== -->
+<nav id="toc-sidebar" class="text-sm">
+  <div class="mb-6">
+    <div class="text-lg font-bold text-sky-400 tracking-wide">ECOGAS</div>
+    <div class="text-xs text-slate-500 mt-1">Memorial de Cálculo</div>
+    <div class="text-xs text-slate-600">Bombas &amp; Dessecador</div>
+  </div>
+  <ul class="space-y-1">
+    <li><a href="#sec1" class="toc-link block py-1 text-slate-400 hover:text-sky-400">1. Introdução Teórica</a>
+      <ul class="ml-3 space-y-0.5 text-xs">
+        <li><a href="#sec1-1" class="toc-link block py-0.5 text-slate-500">1.1 O que é uma bomba?</a></li>
+        <li><a href="#sec1-2" class="toc-link block py-0.5 text-slate-500">1.2 Tipos de bombas</a></li>
+        <li><a href="#sec1-3" class="toc-link block py-0.5 text-slate-500">1.3 Equação de Bernoulli</a></li>
+        <li><a href="#sec1-4" class="toc-link block py-0.5 text-slate-500">1.4 Altura Manométrica</a></li>
+        <li><a href="#sec1-5" class="toc-link block py-0.5 text-slate-500">1.5 Potência</a></li>
+        <li><a href="#sec1-6" class="toc-link block py-0.5 text-slate-500">1.6 NPSH — Cavitação</a></li>
+        <li><a href="#sec1-7" class="toc-link block py-0.5 text-slate-500">1.7 Duty/Standby</a></li>
+      </ul>
+    </li>
+    <li><a href="#sec2" class="toc-link block py-1 text-slate-400 hover:text-sky-400">2. Dados de Projeto</a></li>
+    <li><a href="#sec3" class="toc-link block py-1 text-slate-400 hover:text-sky-400">3. Cálculo das Bombas</a>
+      <ul class="ml-3 space-y-0.5 text-xs">
+        <li><a href="#P101" class="toc-link block py-0.5 text-slate-500">P-101 A/B — Lodo LA</a></li>
+        <li><a href="#P102" class="toc-link block py-0.5 text-slate-500">P-102 A/B — Lodo Imb</a></li>
+        <li><a href="#P103" class="toc-link block py-0.5 text-slate-500">P-103 — Vinhaça</a></li>
+        <li><a href="#P104" class="toc-link block py-0.5 text-slate-500">P-104 — Resíduo (Moineau)</a></li>
+        <li><a href="#P105" class="toc-link block py-0.5 text-slate-500">P-105 A/B — Lama Mista</a></li>
+        <li><a href="#P106" class="toc-link block py-0.5 text-slate-500">P-106 — Água (Multi-estágio)</a></li>
+        <li><a href="#P107" class="toc-link block py-0.5 text-slate-500">P-107 — Efluente C-101</a></li>
+        <li><a href="#P108" class="toc-link block py-0.5 text-slate-500">P-108 — Digestato</a></li>
+      </ul>
+    </li>
+    <li><a href="#sec4" class="toc-link block py-1 text-slate-400 hover:text-sky-400">4. Tabela Resumo</a></li>
+    <li><a href="#sec5" class="toc-link block py-1 text-slate-400 hover:text-sky-400">5. Dessecador S-101</a></li>
+    <li><a href="#sec6" class="toc-link block py-1 text-slate-400 hover:text-sky-400">6. Referências</a></li>
+  </ul>
+</nav>
+
+<!-- ==================== MAIN CONTENT ==================== -->
+<div id="main-content" class="min-h-screen">
+
+  <!-- HEADER -->
+  <header class="bg-gradient-to-r from-sky-900/60 via-slate-900 to-slate-900 border-b border-slate-700 px-8 py-8">
+    <div class="max-w-5xl mx-auto">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-12 h-12 rounded-xl bg-sky-500/20 border border-sky-500/40 flex items-center justify-center text-sky-400 font-bold text-xl">E</div>
+            <div>
+              <h1 class="text-2xl font-bold text-white tracking-tight">ECOGAS — Planta de Biogás por Codigestão</h1>
+              <p class="text-sky-400 text-sm font-medium">Memorial de Cálculo: Dimensionamento de Bombas &amp; Dessecador</p>
+            </div>
+          </div>
+        </div>
+        <div class="text-right text-xs text-slate-400 space-y-0.5">
+          <div>Disciplina: Projetos Industriais II</div>
+          <div>Elaboração: G. Luz</div>
+          <div>Revisão: Equipe ECOGAS</div>
+          <div>Data: Maio 2026</div>
+          <div class="mt-1 px-2 py-0.5 bg-sky-500/10 border border-sky-500/30 rounded text-sky-400 inline-block">Rev. 01 — Projeto Conceitual</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-8 py-10 space-y-16">
+
+    <!-- =========================================================== -->
+    <!-- SEÇÃO 1 — INTRODUÇÃO TEÓRICA                                -->
+    <!-- =========================================================== -->
+    <section id="sec1">
+      <h2 class="text-3xl font-bold text-sky-400 border-b border-slate-700 pb-3 mb-8">1. Introdução Teórica — Bombas Industriais</h2>
+      <p class="text-slate-300 mb-6 leading-relaxed">
+        Esta seção ensina, do zero, toda a teoria necessária para dimensionar bombas em uma planta industrial.
+        Cada conceito é construído a partir da intuição física, antes de qualquer equação.
+      </p>
+
+      <!-- 1.1 -->
+      <div id="sec1-1" class="mb-12">
+        <h3 class="text-xl font-semibold text-white mb-4">1.1 O que é uma bomba?</h3>
+
+        <div class="intuition-box rounded-lg p-5 mb-4">
+          <div class="text-amber-400 font-semibold text-sm mb-2">INTUIÇÃO FÍSICA</div>
+          <p class="text-slate-300 leading-relaxed">
+            Imagine uma planta industrial como um corpo humano: os fluidos (água, lodos, reagentes) são o "sangue"
+            que transporta matéria e energia entre os "órgãos" (equipamentos). A <strong class="text-amber-300">bomba é o coração</strong>
+            desse sistema — sem ela, nada flui.
+          </p>
+        </div>
+
+        <p class="text-slate-300 mb-4 leading-relaxed">
+          <strong class="text-white">Definição formal:</strong> Uma bomba é um equipamento mecânico que <em>converte energia mecânica
+          (do eixo de um motor)</em> em <em>energia de pressão e/ou cinética do fluido</em>, permitindo que ele se desloque
+          de um ponto a outro do processo, vencendo:
+        </p>
+        <ul class="list-disc list-inside text-slate-300 space-y-2 ml-4 mb-4">
+          <li><strong class="text-sky-400">Gravidade (desnível geométrico)</strong> — se o destino está mais alto que a origem, o fluido precisa "subir"</li>
+          <li><strong class="text-sky-400">Atrito (perdas na tubulação)</strong> — toda tubulação oferece resistência ao escoamento; parte da energia vira calor</li>
+          <li><strong class="text-sky-400">Pressão (do equipamento de destino)</strong> — se o destino opera a pressão maior que a origem (ex.: coluna pressurizada), a bomba precisa fornecer essa diferença</li>
+        </ul>
+
+        <div class="formula-box rounded-lg p-4 mb-4">
+          <div class="text-sky-400 font-semibold text-sm mb-2">CONCEITO-CHAVE</div>
+          <p class="text-slate-300">
+            A bomba <strong class="text-white">não cria pressão por si só</strong>. Ela transfere energia ao fluido.
+            A pressão é uma <em>consequência</em> do fluido receber essa energia e encontrar resistência ao escoamento (atrito, elevação, equipamento).
+          </p>
+        </div>
+      </div>
+
+      <!-- 1.2 -->
+      <div id="sec1-2" class="mb-12">
+        <h3 class="text-xl font-semibold text-white mb-4">1.2 Tipos de Bombas Industriais</h3>
+
+        <p class="text-slate-300 mb-4 leading-relaxed">
+          Existem duas grandes famílias de bombas. A escolha depende fundamentalmente das
+          <strong class="text-white">propriedades do fluido</strong> (viscosidade, presença de sólidos) e das
+          <strong class="text-white">condições de operação</strong> (vazão, pressão).
+        </p>
+
+        <div class="grid md:grid-cols-2 gap-6 mb-6">
+          <!-- Centrífugas -->
+          <div class="bg-card rounded-xl border border-slate-700 p-5">
+            <h4 class="text-lg font-bold text-sky-400 mb-3">Bombas Centrífugas</h4>
+            <p class="text-slate-400 text-sm mb-3">Princípio: impelidor rotativo acelera o fluido radialmente; a energia cinética é convertida em pressão no difusor.</p>
+            <ul class="text-sm text-slate-300 space-y-2">
+              <li><strong class="text-white">Standard (fechado):</strong> Fluidos limpos ou com sólidos finos. Eficiência alta (η ≈ 0.70–0.85). Ex.: água, vinhaça.</li>
+              <li><strong class="text-white">Canal aberto (vortex):</strong> Fluidos com sólidos grosseiros (lodo, fibras). Passagem livre evita entupimento. η ≈ 0.55–0.65.</li>
+              <li><strong class="text-white">Multi-estágio:</strong> Vários impelidores em série quando um estágio não entrega a pressão necessária. Usado para ΔP alto (ex.: alimentação de colunas pressurizadas).</li>
+            </ul>
+            <div class="mt-3 p-2 bg-slate-800 rounded text-xs text-slate-400">
+              <strong class="text-sky-400">Quando usar:</strong> μ &lt; 0,1 Pa·s, sem sólidos grosseiros, vazões médias a altas.
+            </div>
+          </div>
+
+          <!-- Deslocamento Positivo -->
+          <div class="bg-card rounded-xl border border-slate-700 p-5">
+            <h4 class="text-lg font-bold text-amber-400 mb-3">Bombas de Deslocamento Positivo</h4>
+            <p class="text-slate-400 text-sm mb-3">Princípio: um elemento mecânico (parafuso, lóbulo, engrenagem) desloca um volume fixo de fluido a cada rotação.</p>
+            <ul class="text-sm text-slate-300 space-y-2">
+              <li><strong class="text-white">Parafuso / Moineau:</strong> Rotor helicoidal dentro de estator elastomérico. Excelente para fluidos viscosos e com sólidos. Ex.: lodo digerido, resíduos orgânicos.</li>
+              <li><strong class="text-white">Peristáltica:</strong> Rolos comprimem mangueira flexível. Sem contato fluido-mecânica. Para fluidos agressivos, abrasivos.</li>
+              <li><strong class="text-white">Engrenagem:</strong> Dois rotores engrenados. Para fluidos viscosos limpos (óleos, polímeros).</li>
+            </ul>
+            <div class="mt-3 p-2 bg-slate-800 rounded text-xs text-slate-400">
+              <strong class="text-amber-400">Quando usar:</strong> μ &gt; 0,1 Pa·s, fluidos com sólidos em suspensão, ou quando se precisa de vazão constante independente da pressão.
+            </div>
+          </div>
+        </div>
+
+        <div class="formula-box rounded-lg p-4 mb-4">
+          <div class="text-sky-400 font-semibold text-sm mb-2">CRITÉRIO DE SELEÇÃO — REGRA PRÁTICA</div>
+          <table class="w-full text-sm mt-2">
+            <thead>
+              <tr><th class="text-left text-slate-300">Condição</th><th class="text-left text-slate-300">Tipo recomendado</th><th class="text-left text-slate-300">Razão</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>μ &lt; 0,01 Pa·s, sem sólidos</td><td class="text-sky-400">Centrífuga standard</td><td>Eficiência máxima, custo baixo</td></tr>
+              <tr><td>μ &lt; 0,1 Pa·s, com sólidos</td><td class="text-sky-400">Centrífuga canal aberto</td><td>Passagem livre para sólidos</td></tr>
+              <tr><td>μ &gt; 0,1 Pa·s</td><td class="text-amber-400">Deslocamento positivo</td><td>Centrífuga perde eficiência drasticamente</td></tr>
+              <tr><td>ΔP &gt; 150 m (≈ 15 bar)</td><td class="text-sky-400">Centrífuga multi-estágio</td><td>Um estágio não atinge essa pressão</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 1.3 -->
+      <div id="sec1-3" class="mb-12">
+        <h3 class="text-xl font-semibold text-white mb-4">1.3 A Equação de Bernoulli Modificada — O "Bilhete de Entrada"</h3>
+
+        <div class="intuition-box rounded-lg p-5 mb-4">
+          <div class="text-amber-400 font-semibold text-sm mb-2">INTUIÇÃO FÍSICA</div>
+          <p class="text-slate-300 leading-relaxed">
+            A equação de Bernoulli é, no fundo, a <strong class="text-amber-300">conservação de energia</strong> aplicada a um fluido em movimento.
+            Pense assim: a energia total do fluido em qualquer ponto é a soma de três "moedas" —
+            <em>pressão</em> (energia de pressão), <em>velocidade</em> (energia cinética) e <em>altura</em> (energia potencial gravitacional).
+            Se o fluido perde energia por atrito (calor), alguém precisa repor: esse "alguém" é a bomba.
+          </p>
+        </div>
+
+        <div class="formula-box rounded-lg p-5 mb-4">
+          <div class="text-sky-400 font-semibold text-sm mb-2">EQUAÇÃO DE BERNOULLI MODIFICADA (com bomba e perdas)</div>
+          <div class="text-center text-lg my-4 mono text-white">
+            <span class="text-sky-300">P<sub>1</sub></span>/(ρg) + <span class="text-sky-300">v<sub>1</sub><sup>2</sup></span>/(2g) + <span class="text-sky-300">z<sub>1</sub></span> + <span class="text-green-400">H<sub>bomba</sub></span>
+            = <span class="text-sky-300">P<sub>2</sub></span>/(ρg) + <span class="text-sky-300">v<sub>2</sub><sup>2</sup></span>/(2g) + <span class="text-sky-300">z<sub>2</sub></span> + <span class="text-red-400">h<sub>f</sub></span>
+          </div>
+          <p class="text-sm text-slate-400 mb-3">Onde cada termo (todos em metros de coluna de fluido, [m]):</p>
+          <table class="w-full text-sm">
+            <thead><tr><th class="text-left">Termo</th><th class="text-left">Significado físico</th><th class="text-left">Unidade</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">P/(ρg)</td><td>Energia de pressão — "empurrão" do fluido</td><td>[m]</td></tr>
+              <tr><td class="mono">v²/(2g)</td><td>Energia cinética — velocidade do fluido</td><td>[m]</td></tr>
+              <tr><td class="mono">z</td><td>Energia potencial — altura em relação a um referencial</td><td>[m]</td></tr>
+              <tr><td class="mono text-green-400">H<sub>bomba</sub></td><td>Energia <strong>adicionada</strong> pela bomba ao fluido</td><td>[m]</td></tr>
+              <tr><td class="mono text-red-400">h<sub>f</sub></td><td>Energia <strong>perdida</strong> por atrito na tubulação</td><td>[m]</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="text-slate-300 mb-4 leading-relaxed">
+          <strong class="text-white">Simplificação comum:</strong> Quando bombeamos de um tanque aberto (P<sub>1</sub> = P<sub>atm</sub>) para outro
+          tanque aberto (P<sub>2</sub> = P<sub>atm</sub>), ambos com superfície livre (v<sub>1</sub> ≈ v<sub>2</sub> ≈ 0), a equação se reduz a:
+        </p>
+        <div class="formula-box rounded-lg p-4 mb-4 text-center">
+          <span class="mono text-lg text-green-400">H<sub>bomba</sub></span>
+          <span class="text-white text-lg"> = (z<sub>2</sub> - z<sub>1</sub>) + h<sub>f</sub> = H<sub>geo</sub> + h<sub>f</sub></span>
+        </div>
+        <p class="text-slate-400 text-sm">
+          A bomba precisa vencer exatamente o desnível mais as perdas por atrito. Simples e poderoso.
+        </p>
+      </div>
+
+      <!-- 1.4 -->
+      <div id="sec1-4" class="mb-12">
+        <h3 class="text-xl font-semibold text-white mb-4">1.4 Altura Manométrica Total (H<sub>m</sub>)</h3>
+
+        <div class="intuition-box rounded-lg p-5 mb-4">
+          <div class="text-amber-400 font-semibold text-sm mb-2">INTUIÇÃO FÍSICA</div>
+          <p class="text-slate-300 leading-relaxed">
+            A <strong class="text-amber-300">altura manométrica total</strong> (H<sub>m</sub>) é a "conta final" de quanto a bomba precisa "empurrar"
+            o fluido. Pense nela como a soma de três "faturas":
+          </p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-4 mb-6">
+          <div class="bg-card rounded-xl border border-sky-700/40 p-4">
+            <div class="text-sky-400 font-bold text-lg mb-1">H<sub>geo</sub></div>
+            <div class="text-slate-400 text-xs mb-2">Desnível geométrico [m]</div>
+            <p class="text-sm text-slate-300">"Quanto o fluido precisa subir." É a diferença de cota entre o nível do líquido na origem e no destino.</p>
+            <div class="mono text-sm mt-2 text-slate-400">H<sub>geo</sub> = z<sub>destino</sub> − z<sub>origem</sub></div>
+          </div>
+          <div class="bg-card rounded-xl border border-amber-700/40 p-4">
+            <div class="text-amber-400 font-bold text-lg mb-1">H<sub>pressão</sub></div>
+            <div class="text-slate-400 text-xs mb-2">Diferença de pressão convertida em metros [m]</div>
+            <p class="text-sm text-slate-300">"Quanto precisa empurrar contra pressão." Se o destino opera a pressão maior, essa diferença vira metros de coluna.</p>
+            <div class="mono text-sm mt-2 text-slate-400">H<sub>pressão</sub> = ΔP / (ρ × g)</div>
+          </div>
+          <div class="bg-card rounded-xl border border-red-700/40 p-4">
+            <div class="text-red-400 font-bold text-lg mb-1">H<sub>perda</sub></div>
+            <div class="text-slate-400 text-xs mb-2">Perdas por atrito [m]</div>
+            <p class="text-sm text-slate-300">"Quanto se perde em calor por fricção." Depende do comprimento, diâmetro, rugosidade da tubulação e velocidade.</p>
+            <div class="mono text-sm mt-2 text-slate-400">H<sub>perda</sub> = h<sub>f,distrib.</sub> + h<sub>f,local.</sub></div>
+          </div>
+        </div>
+
+        <div class="formula-box rounded-lg p-5 mb-4">
+          <div class="text-sky-400 font-semibold text-sm mb-2">EQUAÇÃO CENTRAL</div>
+          <div class="text-center text-xl my-3 mono text-white">
+            H<sub>m</sub> = H<sub>geo</sub> + H<sub>pressão</sub> + H<sub>perda</sub>
+          </div>
+        </div>
+
+        <div class="intuition-box rounded-lg p-5 mb-4">
+          <div class="text-amber-400 font-semibold text-sm mb-2">HEURÍSTICA DO PROJETO CONCEITUAL</div>
+          <p class="text-slate-300 leading-relaxed mb-3">
+            No projeto conceitual, <strong class="text-amber-300">as tubulações ainda não foram dimensionadas</strong>. Não temos
+            comprimentos, diâmetros e acessórios definidos para calcular perdas de carga exatas. Por isso, adotamos uma
+            <strong class="text-white">estimativa heurística</strong>:
+          </p>
+          <div class="text-center text-lg my-3 mono text-amber-300">
+            H<sub>perda</sub> ≈ 20% × (H<sub>geo</sub> + H<sub>pressão</sub>)
+          </div>
+          <p class="text-slate-400 text-sm">
+            Essa regra de bolso é amplamente utilizada em projetos conceituais e anteprojetos.
+            Em fases posteriores (projeto básico/detalhado), as perdas são calculadas rigorosamente com Darcy-Weisbach,
+            Colebrook-White e tabelas de K para singularidades.
+          </p>
+        </div>
+      </div>
+
+      <!-- 1.5 -->
+      <div id="sec1-5" class="mb-12">
+        <h3 class="text-xl font-semibold text-white mb-4">1.5 Potência: Hidráulica, de Eixo e Instalada</h3>
+
+        <div class="intuition-box rounded-lg p-5 mb-4">
+          <div class="text-amber-400 font-semibold text-sm mb-2">INTUIÇÃO FÍSICA</div>
+          <p class="text-slate-300 leading-relaxed">
+            A potência é "quanta energia por segundo" a bomba precisa transferir. Mas nem toda energia que o motor fornece chega ao fluido
+            — há perdas no motor (elétrica → mecânica) e na própria bomba (mecânica → hidráulica). Por isso, trabalhamos com
+            <strong class="text-amber-300">quatro níveis de potência</strong>, cada um maior que o anterior.
+          </p>
+        </div>
+
+        <div class="space-y-4 mb-6">
+          <div class="formula-box rounded-lg p-4">
+            <div class="flex items-start gap-4">
+              <div class="text-sky-400 font-bold text-sm whitespace-nowrap min-w-[120px]">① P<sub>hid</sub></div>
+              <div>
+                <div class="mono text-white mb-1">P<sub>hid</sub> = ρ × g × Q × H<sub>m</sub> &nbsp;&nbsp; [W]</div>
+                <p class="text-slate-400 text-sm"><strong class="text-slate-300">Potência hidráulica</strong> — é a potência <em>útil</em>, transferida diretamente ao fluido. Se a bomba fosse perfeita (η=1), bastaria isso.</p>
+                <p class="text-slate-500 text-xs mt-1">ρ = massa específica [kg/m³], g = 9,81 m/s², Q = vazão [m³/s], H<sub>m</sub> = altura manométrica [m]</p>
+              </div>
+            </div>
+          </div>
+          <div class="formula-box rounded-lg p-4">
+            <div class="flex items-start gap-4">
+              <div class="text-sky-400 font-bold text-sm whitespace-nowrap min-w-[120px]">② P<sub>eixo</sub></div>
+              <div>
+                <div class="mono text-white mb-1">P<sub>eixo</sub> = P<sub>hid</sub> / η<sub>bomba</sub> &nbsp;&nbsp; [W]</div>
+                <p class="text-slate-400 text-sm"><strong class="text-slate-300">Potência de eixo</strong> — inclui as perdas internas da bomba (atrito, recirculação, vazamentos). η<sub>bomba</sub> depende do tipo.</p>
+                <table class="text-xs text-slate-500 mt-2">
+                  <tr><td class="pr-4">Centrífuga standard (água):</td><td>η ≈ 0,70 – 0,80</td></tr>
+                  <tr><td class="pr-4">Centrífuga canal aberto (lodo):</td><td>η ≈ 0,55 – 0,65</td></tr>
+                  <tr><td class="pr-4">Moineau (fluido viscoso):</td><td>η ≈ 0,50 – 0,65</td></tr>
+                  <tr><td class="pr-4">Multi-estágio:</td><td>η ≈ 0,65 – 0,75</td></tr>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="formula-box rounded-lg p-4">
+            <div class="flex items-start gap-4">
+              <div class="text-sky-400 font-bold text-sm whitespace-nowrap min-w-[120px]">③ P<sub>motor</sub></div>
+              <div>
+                <div class="mono text-white mb-1">P<sub>motor</sub> = P<sub>eixo</sub> / η<sub>motor</sub> &nbsp;&nbsp; [W]</div>
+                <p class="text-slate-400 text-sm"><strong class="text-slate-300">Potência do motor elétrico</strong> — inclui as perdas no motor (aquecimento, atrito de rolamentos).
+                  Motores IE3 (alta eficiência): η<sub>motor</sub> ≈ 0,92 – 0,95.</p>
+              </div>
+            </div>
+          </div>
+          <div class="formula-box rounded-lg p-4">
+            <div class="flex items-start gap-4">
+              <div class="text-sky-400 font-bold text-sm whitespace-nowrap min-w-[120px]">④ P<sub>instalada</sub></div>
+              <div>
+                <div class="mono text-white mb-1">P<sub>instalada</sub> = P<sub>motor</sub> × FS &nbsp;&nbsp; [W]</div>
+                <p class="text-slate-400 text-sm"><strong class="text-slate-300">Potência instalada</strong> — com <strong>fator de serviço</strong> (FS = 1,10 – 1,25) para cobrir partidas, variações de carga, envelhecimento.
+                  Este é o valor que vai para a <em>folha de dados</em> e para a compra do motor.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="verify-box rounded-lg p-4">
+          <div class="text-green-400 font-semibold text-sm mb-2">VERIFICAÇÃO DE UNIDADES</div>
+          <div class="mono text-sm text-slate-300">
+            P<sub>hid</sub> = [kg/m³] × [m/s²] × [m³/s] × [m] = [kg·m²/s³] = <strong class="text-green-400">[W]</strong> ✓
+          </div>
+        </div>
+      </div>
+
+      <!-- 1.6 -->
+      <div id="sec1-6" class="mb-12">
+        <h3 class="text-xl font-semibold text-white mb-4">1.6 NPSH — Cavitação: O Perigo Invisível</h3>
+
+        <div class="intuition-box rounded-lg p-5 mb-4">
+          <div class="text-amber-400 font-semibold text-sm mb-2">INTUIÇÃO FÍSICA</div>
+          <p class="text-slate-300 leading-relaxed">
+            Na entrada da bomba (sucção), o fluido é acelerado pelo impelidor, o que <strong class="text-amber-300">reduz localmente a pressão</strong>
+            (princípio de Bernoulli). Se essa pressão local cair abaixo da <em>pressão de vapor</em> do fluido na temperatura de operação,
+            o líquido <strong class="text-red-400">ferve localmente</strong>, formando bolhas de vapor.
+          </p>
+          <p class="text-slate-300 mt-2 leading-relaxed">
+            Essas bolhas são então carregadas para zonas de alta pressão (próximo à saída do impelidor), onde
+            <strong class="text-red-400">colapsam violentamente</strong> (implosão). Esse colapso gera ondas de choque microscópicas que
+            causam <em>erosão, ruído, vibração e danos permanentes ao impelidor</em>. Esse fenômeno chama-se <strong class="text-white">cavitação</strong>.
+          </p>
+        </div>
+
+        <div class="danger-box rounded-lg p-5 mb-4">
+          <div class="text-red-400 font-semibold text-sm mb-2">CAVITAÇÃO — CONSEQUÊNCIAS</div>
+          <ul class="text-slate-300 text-sm space-y-1">
+            <li>• Erosão do impelidor (crateras tipo "queijo suíço")</li>
+            <li>• Queda drástica de vazão e pressão</li>
+            <li>• Ruído característico (como pedras dentro da bomba)</li>
+            <li>• Vibração excessiva → falha de rolamentos e selos mecânicos</li>
+            <li>• Redução da vida útil de meses para semanas</li>
+          </ul>
+        </div>
+
+        <div class="formula-box rounded-lg p-5 mb-4">
+          <div class="text-sky-400 font-semibold text-sm mb-2">NPSH — NET POSITIVE SUCTION HEAD</div>
+          <p class="text-slate-300 text-sm mb-3">Dois conceitos fundamentais:</p>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="bg-slate-800 rounded-lg p-3">
+              <div class="text-amber-400 font-semibold text-sm">NPSH<sub>requerido</sub> (NPSH<sub>r</sub>)</div>
+              <p class="text-slate-400 text-xs mt-1">Dado pelo <em>fabricante</em> da bomba. Representa a pressão mínima necessária na sucção para evitar cavitação. Depende do design do impelidor.</p>
+            </div>
+            <div class="bg-slate-800 rounded-lg p-3">
+              <div class="text-sky-400 font-semibold text-sm">NPSH<sub>disponível</sub> (NPSH<sub>d</sub>)</div>
+              <p class="text-slate-400 text-xs mt-1">Calculado pelo <em>projetista</em>. Representa quanto o sistema realmente entrega de pressão na sucção da bomba.</p>
+            </div>
+          </div>
+
+          <div class="text-center text-lg my-4 mono">
+            <span class="text-sky-400">NPSH<sub>d</sub></span> = (P<sub>atm</sub> − P<sub>vapor</sub>) / (ρ × g) + z<sub>sucção</sub> − h<sub>f,sucção</sub>
+          </div>
+          <p class="text-slate-400 text-sm mb-2">Onde:</p>
+          <ul class="text-sm text-slate-400 space-y-1 ml-4">
+            <li>P<sub>atm</sub> = pressão atmosférica ≈ 101.325 Pa</li>
+            <li>P<sub>vapor</sub> = pressão de vapor do fluido na temperatura de operação [Pa]</li>
+            <li>z<sub>sucção</sub> = altura da superfície livre do líquido acima do eixo da bomba [m] (positivo se acima)</li>
+            <li>h<sub>f,sucção</sub> = perdas por atrito na tubulação de sucção [m]</li>
+          </ul>
+
+          <div class="mt-4 p-3 bg-green-900/30 rounded-lg border border-green-700/40">
+            <div class="text-green-400 font-semibold text-sm">CRITÉRIO DE PROJETO</div>
+            <div class="text-center text-lg my-2 mono text-green-300">
+              NPSH<sub>d</sub> &gt; NPSH<sub>r</sub> + 0,5 m &nbsp;&nbsp; (margem de segurança)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1.7 -->
+      <div id="sec1-7" class="mb-12">
+        <h3 class="text-xl font-semibold text-white mb-4">1.7 Filosofia Duty/Standby (A/B)</h3>
+
+        <div class="intuition-box rounded-lg p-5 mb-4">
+          <div class="text-amber-400 font-semibold text-sm mb-2">POR QUE DUAS BOMBAS?</div>
+          <p class="text-slate-300 leading-relaxed">
+            Em processos <strong class="text-white">contínuos</strong> (24h/dia, 7 dias/semana), a parada de uma bomba crítica
+            pode parar a <em>planta inteira</em>. Para garantir continuidade operacional, bombas críticas são instaladas
+            em configuração <strong class="text-sky-400">Duty/Standby</strong> (A/B):
+          </p>
+        </div>
+
+        <ul class="text-slate-300 space-y-2 ml-4 mb-4">
+          <li><strong class="text-sky-400">Bomba A (Duty):</strong> Opera normalmente.</li>
+          <li><strong class="text-sky-400">Bomba B (Standby):</strong> Instalada, testada, pronta para assumir instantaneamente em caso de falha da A.</li>
+          <li>São <strong class="text-white">idênticas</strong> — mesma especificação, mesma capacidade. NÃO se dimensiona uma bomba maior como reserva.</li>
+          <li>Cada bomba é dimensionada para 100% da vazão de projeto.</li>
+          <li>Alternam-se periodicamente para equalizar desgaste.</li>
+        </ul>
+
+        <div class="formula-box rounded-lg p-4">
+          <div class="text-sky-400 font-semibold text-sm mb-2">NESTE PROJETO — BOMBAS A/B</div>
+          <p class="text-slate-400 text-sm">
+            As seguintes bombas são duty/standby por serem críticas para a continuidade do processo:
+          </p>
+          <ul class="text-sm text-slate-300 mt-2 space-y-1">
+            <li>• <strong>P-101 A/B</strong> — Alimentação de lodo ao TQ-01 (insumo principal)</li>
+            <li>• <strong>P-102 A/B</strong> — Alimentação de lodo Imbituba ao TQ-01</li>
+            <li>• <strong>P-105 A/B</strong> — Alimentação dos biorreatores (coração da planta)</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================== -->
+    <!-- SEÇÃO 2 — DADOS DE PROJETO                                  -->
+    <!-- =========================================================== -->
+    <section id="sec2">
+      <h2 class="text-3xl font-bold text-sky-400 border-b border-slate-700 pb-3 mb-8">2. Dados de Projeto — Balanço de Massa ECOGAS</h2>
+
+      <p class="text-slate-300 mb-6 leading-relaxed">
+        A tabela abaixo consolida todos os dados necessários para o dimensionamento, extraídos do
+        <strong class="text-white">Balanço de Massa e Energia</strong> e do <strong class="text-white">PFD (Process Flow Diagram)</strong> do projeto ECOGAS.
+      </p>
+
+      <div class="overflow-x-auto mb-6">
+        <table class="text-sm w-full">
+          <thead>
+            <tr class="text-xs">
+              <th>Tag</th>
+              <th>Serviço</th>
+              <th>Fluido</th>
+              <th>ρ [kg/m³]</th>
+              <th>μ [Pa·s]</th>
+              <th>Q [m³/d]</th>
+              <th>Q [m³/h]</th>
+              <th>Q [m³/s]</th>
+              <th>H<sub>geo</sub> [m]</th>
+              <th>ΔP [kPa]</th>
+              <th>Tipo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="font-bold text-sky-400">P-101 A/B</td>
+              <td>Lodo LA → TQ-01</td><td>Lodo ETE</td>
+              <td>1020</td><td>0,050</td><td>320</td><td>13,33</td><td>3,70×10<sup>−3</sup></td>
+              <td>1,5</td><td>0</td><td>Centrífuga canal aberto</td>
+            </tr>
+            <tr>
+              <td class="font-bold text-sky-400">P-102 A/B</td>
+              <td>Lodo Imb → TQ-01</td><td>Lodo ETE</td>
+              <td>1015</td><td>0,050</td><td>80</td><td>3,33</td><td>9,26×10<sup>−4</sup></td>
+              <td>1,5</td><td>0</td><td>Centrífuga canal aberto</td>
+            </tr>
+            <tr>
+              <td class="font-bold text-sky-400">P-103</td>
+              <td>Vinhaça → TQ-02</td><td>Vinhaça</td>
+              <td>1050</td><td>0,020</td><td>50</td><td>2,08</td><td>5,79×10<sup>−4</sup></td>
+              <td>1,2</td><td>0</td><td>Centrífuga standard</td>
+            </tr>
+            <tr>
+              <td class="font-bold text-amber-400">P-104</td>
+              <td>Resíduo → TQ-03</td><td>Resíduo org.</td>
+              <td>1080</td><td class="text-amber-400 font-bold">0,800</td><td>50</td><td>2,08</td><td>5,79×10<sup>−4</sup></td>
+              <td>1,2</td><td>0</td><td class="text-amber-400">Moineau (desloc. +)</td>
+            </tr>
+            <tr>
+              <td class="font-bold text-sky-400">P-105 A/B</td>
+              <td>Mist. → Biorreatores</td><td>Lama mista</td>
+              <td>1022</td><td>0,045</td><td>500</td><td>20,83</td><td>5,79×10<sup>−3</sup></td>
+              <td>7,27</td><td>0</td><td>Centrífuga canal aberto</td>
+            </tr>
+            <tr>
+              <td class="font-bold text-sky-400">P-106</td>
+              <td>Água → C-101 topo</td><td>Água</td>
+              <td>998</td><td>0,001</td><td>1221,6</td><td>50,9</td><td>1,41×10<sup>−2</sup></td>
+              <td>7,28</td><td class="text-red-400 font-bold">900</td><td class="text-sky-400">Centrífuga multi-estágio</td>
+            </tr>
+            <tr>
+              <td class="font-bold text-sky-400">P-107</td>
+              <td>Efluente C-101 → Flash</td><td>Água + CO₂</td>
+              <td>1002</td><td>0,001</td><td>1221,6</td><td>50,9</td><td>1,41×10<sup>−2</sup></td>
+              <td>−0,3</td><td>0</td><td>Centrífuga standard</td>
+            </tr>
+            <tr>
+              <td class="font-bold text-amber-400">P-108</td>
+              <td>Digestato → armazen.</td><td>Lama digerida</td>
+              <td>1015</td><td>0,030</td><td>425</td><td>17,71</td><td>4,92×10<sup>−3</sup></td>
+              <td class="text-green-400 font-bold">−8,24</td><td>0</td><td>Parafuso (Moineau)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4 mb-4">
+        <div class="intuition-box rounded-lg p-4">
+          <div class="text-amber-400 font-semibold text-sm mb-2">NOTA — P-106 (ΔP = 900 kPa)</div>
+          <p class="text-slate-400 text-sm">
+            A P-106 bombeia água da atmosfera (P<sub>atm</sub> ≈ 1 bar) para o topo da coluna de absorção C-101
+            que opera a ≈ 10 bar. Portanto, ΔP ≈ 10 − 1 = 9 bar = 900 kPa. Essa pressão enorme requer uma
+            bomba centrífuga multi-estágio.
+          </p>
+        </div>
+        <div class="intuition-box rounded-lg p-4">
+          <div class="text-amber-400 font-semibold text-sm mb-2">NOTA — P-108 (H<sub>geo</sub> negativo)</div>
+          <p class="text-slate-400 text-sm">
+            O digestato sai dos biorreatores (cota ≈ 12 m) e desce para o armazenamento (cota ≈ 4 m).
+            O desnível é <strong class="text-green-400">negativo</strong> (−8,24 m), ou seja, a gravidade <em>ajuda</em>.
+            Se as perdas por atrito forem menores que 8,24 m, pode ser possível escoamento por gravidade!
+          </p>
+        </div>
+      </div>
+
+      <div class="formula-box rounded-lg p-4">
+        <div class="text-sky-400 font-semibold text-sm mb-2">COTAS DO PFD (Referência)</div>
+        <table class="text-sm">
+          <tr><td class="pr-6">Tanques TQ-01, TQ-02, TQ-03 (nível base):</td><td class="font-bold">cota ≈ 5,0 m</td></tr>
+          <tr><td>Biorreatores R-101 a R-104 (nível base):</td><td class="font-bold">cota ≈ 12,27 m</td></tr>
+          <tr><td>Coluna de absorção C-101 (topo):</td><td class="font-bold">cota ≈ 12,28 m</td></tr>
+          <tr><td>Armazenamento de digestato:</td><td class="font-bold">cota ≈ 4,0 m</td></tr>
+          <tr><td>Recebimento de insumos (caminhões):</td><td class="font-bold">cota ≈ 3,5 m</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- =========================================================== -->
+    <!-- SEÇÃO 3 — CÁLCULO DETALHADO DE CADA BOMBA                   -->
+    <!-- =========================================================== -->
+    <section id="sec3">
+      <h2 class="text-3xl font-bold text-sky-400 border-b border-slate-700 pb-3 mb-8">3. Cálculo Detalhado — Dimensionamento de Cada Bomba</h2>
+
+      <p class="text-slate-300 mb-8 leading-relaxed">
+        Cada bomba é dimensionada seguindo a mesma metodologia: dados → altura manométrica → potência → verificações.
+        Parâmetros comuns: <span class="mono text-slate-400">g = 9,81 m/s²</span>,
+        <span class="mono text-slate-400">P<sub>atm</sub> = 101,325 kPa</span>,
+        <span class="mono text-slate-400">FS = 1,15</span>,
+        <span class="mono text-slate-400">η<sub>motor</sub> = 0,93 (IE3)</span>.
+      </p>
+
+      <!-- ==================== P-101 A/B ==================== -->
+      <div id="P101" class="mb-16 no-break">
+        <div class="pump-header rounded-t-xl p-5 border border-slate-600">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h3 class="text-2xl font-bold text-white">P-101 A/B</h3>
+              <p class="text-sky-300 text-sm">Bombeamento de Lodo de ETE (Lages) → TQ-01 (Tanque de Equalização)</p>
+            </div>
+            <span class="px-3 py-1 bg-sky-500/20 text-sky-400 text-xs font-semibold rounded-full border border-sky-500/40">DUTY / STANDBY</span>
+          </div>
+        </div>
+        <div class="bg-card rounded-b-xl border border-t-0 border-slate-600 p-6 space-y-5">
+          <!-- Dados -->
+          <div>
+            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-2">Dados de Entrada</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Fluido:</span> <span class="text-white">Lodo de ETE</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ρ =</span> <span class="text-white">1020 kg/m³</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">μ =</span> <span class="text-white">0,050 Pa·s</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Q =</span> <span class="text-white">320 m³/d = 13,33 m³/h</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">H<sub>geo</sub> =</span> <span class="text-white">1,5 m</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ΔP =</span> <span class="text-white">0 kPa</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Config.:</span> <span class="text-sky-400">A/B (Duty/Standby)</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Tipo:</span> <span class="text-white">Centrífuga canal aberto</span></div>
+            </div>
+          </div>
+
+          <!-- Cálculo -->
+          <div>
+            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-2">Cálculo Passo a Passo</h4>
+            <div class="space-y-3 text-sm">
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 1 — Vazão em m³/s:</strong>
+                <div class="mono text-slate-300 mt-1">Q = 320 / 86400 = <strong class="text-white">3,704 × 10<sup>−3</sup> m³/s</strong></div>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 2 — Altura de pressão:</strong>
+                <div class="mono text-slate-300 mt-1">H<sub>pressão</sub> = ΔP / (ρ × g) = 0 / (1020 × 9,81) = <strong class="text-white">0 m</strong></div>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 3 — Perdas estimadas (heurística 20%):</strong>
+                <div class="mono text-slate-300 mt-1">H<sub>perda</sub> = 0,20 × (1,5 + 0) = <strong class="text-white">0,30 m</strong></div>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 4 — Altura manométrica total:</strong>
+                <div class="mono text-slate-300 mt-1">H<sub>m</sub> = 1,5 + 0 + 0,30 = <strong class="text-white">1,80 m</strong></div>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 5 — Potência hidráulica:</strong>
+                <div class="mono text-slate-300 mt-1">P<sub>hid</sub> = 1020 × 9,81 × 3,704×10<sup>−3</sup> × 1,80 = <strong class="text-white">66,7 W</strong> = 0,067 kW</div>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 6 — Potência de eixo (η<sub>bomba</sub> = 0,60 — canal aberto, lodo):</strong>
+                <div class="mono text-slate-300 mt-1">P<sub>eixo</sub> = 66,7 / 0,60 = <strong class="text-white">111 W</strong></div>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 7 — Potência do motor (η<sub>motor</sub> = 0,93):</strong>
+                <div class="mono text-slate-300 mt-1">P<sub>motor</sub> = 111 / 0,93 = <strong class="text-white">120 W</strong></div>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 8 — Potência instalada (FS = 1,15):</strong>
+                <div class="mono text-slate-300 mt-1">P<sub>instalada</sub> = 120 × 1,15 = <strong class="text-white">138 W ≈ 0,14 kW</strong></div>
+                <div class="text-slate-500 text-xs mt-1">Comercial: adotar motor de <strong class="text-amber-400">0,37 kW (0,5 cv)</strong> — menor motor industrial padronizado.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- NPSH -->
+          <div class="verify-box rounded-lg p-4">
+            <div class="text-green-400 font-semibold text-sm mb-2">VERIFICAÇÃO — NPSH (Simplificada)</div>
+            <div class="text-sm text-slate-300">
+              <div class="mono">NPSH<sub>d</sub> ≈ (101325 − 2340) / (1020 × 9,81) + 1,0 − 0,2 = 9,89 + 0,8 = <strong class="text-green-400">10,7 m</strong></div>
+              <p class="text-slate-400 mt-1">P<sub>vapor,lodo</sub> ≈ P<sub>vapor,água@20°C</sub> = 2,34 kPa. Sucção afogada (nível acima da bomba ≈ 1 m). Perdas sucção ≈ 0,2 m.</p>
+              <p class="text-slate-400">NPSH<sub>r</sub> típico para esta bomba ≈ 2–3 m. <strong class="text-green-400">10,7 ≫ 3 m → OK, margem ampla.</strong></p>
+            </div>
+          </div>
+
+          <!-- Velocidade -->
+          <div class="bg-slate-800/50 rounded p-3 text-sm">
+            <strong class="text-sky-400">Verificação de velocidade</strong> (tubo DN 80, D<sub>int</sub> ≈ 0,078 m):
+            <div class="mono text-slate-300 mt-1">
+              A = π × 0,078² / 4 = 4,78 × 10<sup>−3</sup> m² → v = 3,704×10<sup>−3</sup> / 4,78×10<sup>−3</sup> = <strong class="text-white">0,78 m/s</strong>
+            </div>
+            <p class="text-slate-400 mt-1">Faixa recomendada para lodo: 0,5–2,0 m/s. <span class="text-green-400">✓ OK</span></p>
+          </div>
+
+          <!-- Interpretação -->
+          <div class="intuition-box rounded-lg p-4">
+            <div class="text-amber-400 font-semibold text-sm mb-2">INTERPRETAÇÃO FÍSICA</div>
+            <p class="text-slate-300 text-sm">
+              A P-101 é uma bomba de <strong class="text-white">baixa potência</strong> (0,37 kW comercial) porque o desnível é pequeno (1,5 m),
+              não há diferença de pressão, e a vazão é moderada. Apesar da potência baixa, escolhemos centrífuga de canal aberto
+              pelo risco de entupimento — lodo de ETE contém sólidos fibrosos que obstruiriam um impelidor fechado.
+              Configuração A/B garante a alimentação contínua do TQ-01.
+            </p>
+          </div>
+
+          <!-- Resumo -->
+          <div class="bg-slate-800 rounded-lg p-4 border border-slate-600">
+            <h4 class="text-sm font-bold text-white mb-2">Quadro-Resumo P-101 A/B</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+              <div><span class="text-slate-500">Tipo:</span> <span class="text-white">Centrífuga canal aberto</span></div>
+              <div><span class="text-slate-500">Q:</span> <span class="text-white">13,33 m³/h</span></div>
+              <div><span class="text-slate-500">H<sub>m</sub>:</span> <span class="text-white">1,80 m</span></div>
+              <div><span class="text-slate-500">P<sub>inst</sub>:</span> <span class="text-white">0,37 kW (comercial)</span></div>
+              <div><span class="text-slate-500">Material:</span> <span class="text-white">Aço inox 316L</span></div>
+              <div><span class="text-slate-500">Selo:</span> <span class="text-white">Mecânico simples</span></div>
+              <div><span class="text-slate-500">Config.:</span> <span class="text-sky-400">Duty/Standby (A/B)</span></div>
+              <div><span class="text-slate-500">Qtde total:</span> <span class="text-white">2 unidades</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== P-102 A/B ==================== -->
+      <div id="P102" class="mb-16 no-break">
+        <div class="pump-header rounded-t-xl p-5 border border-slate-600">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h3 class="text-2xl font-bold text-white">P-102 A/B</h3>
+              <p class="text-sky-300 text-sm">Bombeamento de Lodo de ETE (Imbituba) → TQ-01 (Tanque de Equalização)</p>
+            </div>
+            <span class="px-3 py-1 bg-sky-500/20 text-sky-400 text-xs font-semibold rounded-full border border-sky-500/40">DUTY / STANDBY</span>
+          </div>
+        </div>
+        <div class="bg-card rounded-b-xl border border-t-0 border-slate-600 p-6 space-y-5">
+          <div>
+            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-2">Dados de Entrada</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Fluido:</span> <span class="text-white">Lodo de ETE</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ρ =</span> <span class="text-white">1015 kg/m³</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">μ =</span> <span class="text-white">0,050 Pa·s</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Q =</span> <span class="text-white">80 m³/d = 3,33 m³/h</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">H<sub>geo</sub> =</span> <span class="text-white">1,5 m</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ΔP =</span> <span class="text-white">0 kPa</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Config.:</span> <span class="text-sky-400">A/B</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Tipo:</span> <span class="text-white">Centrífuga canal aberto</span></div>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-2">Cálculo Passo a Passo</h4>
+            <div class="space-y-3 text-sm">
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 1:</strong>
+                <span class="mono text-slate-300">Q = 80 / 86400 = <strong class="text-white">9,259 × 10<sup>−4</sup> m³/s</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 2:</strong>
+                <span class="mono text-slate-300">H<sub>pressão</sub> = 0 m</span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 3:</strong>
+                <span class="mono text-slate-300">H<sub>perda</sub> = 0,20 × 1,5 = <strong class="text-white">0,30 m</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 4:</strong>
+                <span class="mono text-slate-300">H<sub>m</sub> = 1,5 + 0 + 0,30 = <strong class="text-white">1,80 m</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 5:</strong>
+                <span class="mono text-slate-300">P<sub>hid</sub> = 1015 × 9,81 × 9,259×10<sup>−4</sup> × 1,80 = <strong class="text-white">16,6 W</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 6:</strong>
+                <span class="mono text-slate-300">P<sub>eixo</sub> = 16,6 / 0,60 = <strong class="text-white">27,7 W</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 7:</strong>
+                <span class="mono text-slate-300">P<sub>motor</sub> = 27,7 / 0,93 = <strong class="text-white">29,8 W</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 8:</strong>
+                <span class="mono text-slate-300">P<sub>instalada</sub> = 29,8 × 1,15 = <strong class="text-white">34,3 W ≈ 0,034 kW</strong></span>
+                <div class="text-slate-500 text-xs mt-1">Comercial: <strong class="text-amber-400">0,37 kW (0,5 cv)</strong> — menor padrão industrial.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="verify-box rounded-lg p-4">
+            <div class="text-green-400 font-semibold text-sm mb-2">VERIFICAÇÃO — NPSH</div>
+            <div class="text-sm text-slate-300 mono">
+              NPSH<sub>d</sub> ≈ 9,89 + 1,0 − 0,1 = <strong class="text-green-400">10,8 m ≫ NPSH<sub>r</sub> → OK</strong>
+            </div>
+          </div>
+
+          <div class="bg-slate-800/50 rounded p-3 text-sm">
+            <strong class="text-sky-400">Velocidade</strong> (DN 50, D<sub>int</sub> ≈ 0,050 m):
+            <span class="mono text-slate-300">v = 9,259×10<sup>−4</sup> / (π×0,050²/4) = <strong class="text-white">0,47 m/s</strong> <span class="text-green-400">✓</span></span>
+          </div>
+
+          <div class="intuition-box rounded-lg p-4">
+            <div class="text-amber-400 font-semibold text-sm mb-2">INTERPRETAÇÃO</div>
+            <p class="text-slate-300 text-sm">
+              Análoga à P-101, mas com vazão 4× menor (80 vs. 320 m³/d). A potência calculada é minúscula (34 W),
+              mas adotamos o motor mínimo comercial de 0,37 kW. Canal aberto pelo mesmo critério: lodo com sólidos.
+            </p>
+          </div>
+
+          <div class="bg-slate-800 rounded-lg p-4 border border-slate-600">
+            <h4 class="text-sm font-bold text-white mb-2">Quadro-Resumo P-102 A/B</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+              <div><span class="text-slate-500">Tipo:</span> <span class="text-white">Centrífuga canal aberto</span></div>
+              <div><span class="text-slate-500">Q:</span> <span class="text-white">3,33 m³/h</span></div>
+              <div><span class="text-slate-500">H<sub>m</sub>:</span> <span class="text-white">1,80 m</span></div>
+              <div><span class="text-slate-500">P<sub>inst</sub>:</span> <span class="text-white">0,37 kW (comercial)</span></div>
+              <div><span class="text-slate-500">Material:</span> <span class="text-white">Aço inox 316L</span></div>
+              <div><span class="text-slate-500">Selo:</span> <span class="text-white">Mecânico simples</span></div>
+              <div><span class="text-slate-500">Config.:</span> <span class="text-sky-400">Duty/Standby (A/B)</span></div>
+              <div><span class="text-slate-500">Qtde total:</span> <span class="text-white">2 unidades</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== P-103 ==================== -->
+      <div id="P103" class="mb-16 no-break">
+        <div class="pump-header rounded-t-xl p-5 border border-slate-600">
+          <h3 class="text-2xl font-bold text-white">P-103</h3>
+          <p class="text-sky-300 text-sm">Bombeamento de Vinhaça → TQ-02 (Tanque de Equalização)</p>
+        </div>
+        <div class="bg-card rounded-b-xl border border-t-0 border-slate-600 p-6 space-y-5">
+          <div>
+            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-2">Dados de Entrada</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Fluido:</span> <span class="text-white">Vinhaça</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ρ =</span> <span class="text-white">1050 kg/m³</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">μ =</span> <span class="text-white">0,020 Pa·s</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Q =</span> <span class="text-white">50 m³/d = 2,08 m³/h</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">H<sub>geo</sub> =</span> <span class="text-white">1,2 m</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ΔP =</span> <span class="text-white">0 kPa</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Config.:</span> <span class="text-white">Simples (sem reserva)</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Tipo:</span> <span class="text-white">Centrífuga standard</span></div>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-2">Cálculo Passo a Passo</h4>
+            <div class="space-y-3 text-sm">
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 1:</strong>
+                <span class="mono text-slate-300">Q = 50 / 86400 = <strong class="text-white">5,787 × 10<sup>−4</sup> m³/s</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 2:</strong>
+                <span class="mono text-slate-300">H<sub>pressão</sub> = 0 m</span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 3:</strong>
+                <span class="mono text-slate-300">H<sub>perda</sub> = 0,20 × 1,2 = <strong class="text-white">0,24 m</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 4:</strong>
+                <span class="mono text-slate-300">H<sub>m</sub> = 1,2 + 0 + 0,24 = <strong class="text-white">1,44 m</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 5:</strong>
+                <span class="mono text-slate-300">P<sub>hid</sub> = 1050 × 9,81 × 5,787×10<sup>−4</sup> × 1,44 = <strong class="text-white">8,59 W</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 6 (η<sub>bomba</sub> = 0,70 — standard, vinhaça):</strong>
+                <span class="mono text-slate-300">P<sub>eixo</sub> = 8,59 / 0,70 = <strong class="text-white">12,3 W</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 7:</strong>
+                <span class="mono text-slate-300">P<sub>motor</sub> = 12,3 / 0,93 = <strong class="text-white">13,2 W</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 8:</strong>
+                <span class="mono text-slate-300">P<sub>instalada</sub> = 13,2 × 1,15 = <strong class="text-white">15,2 W ≈ 0,015 kW</strong></span>
+                <div class="text-slate-500 text-xs mt-1">Comercial: <strong class="text-amber-400">0,37 kW (0,5 cv)</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="verify-box rounded-lg p-4">
+            <div class="text-green-400 font-semibold text-sm mb-2">VERIFICAÇÃO — NPSH</div>
+            <div class="text-sm text-slate-300 mono">
+              NPSH<sub>d</sub> ≈ (101325 − 2340)/(1050×9,81) + 1,0 − 0,1 = 9,61 + 0,9 = <strong class="text-green-400">10,5 m → OK</strong>
+            </div>
+          </div>
+
+          <div class="bg-slate-800/50 rounded p-3 text-sm">
+            <strong class="text-sky-400">Velocidade</strong> (DN 40, D<sub>int</sub> ≈ 0,040 m):
+            <span class="mono text-slate-300">v = 5,787×10<sup>−4</sup> / (π×0,040²/4) = <strong class="text-white">0,46 m/s</strong> <span class="text-green-400">✓</span></span>
+          </div>
+
+          <div class="intuition-box rounded-lg p-4">
+            <div class="text-amber-400 font-semibold text-sm mb-2">INTERPRETAÇÃO</div>
+            <p class="text-slate-300 text-sm">
+              Bomba de baixíssima potência. Vinhaça tem μ = 0,020 Pa·s (bem abaixo do limiar de 0,1 Pa·s), então centrífuga standard
+              é adequada. A vinhaça é mais limpa que o lodo — sem necessidade de canal aberto. Sem reserva (A/B) porque a vinhaça é
+              insumo complementar (50 m³/d vs. 320 m³/d do lodo principal).
+            </p>
+          </div>
+
+          <div class="bg-slate-800 rounded-lg p-4 border border-slate-600">
+            <h4 class="text-sm font-bold text-white mb-2">Quadro-Resumo P-103</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+              <div><span class="text-slate-500">Tipo:</span> <span class="text-white">Centrífuga standard</span></div>
+              <div><span class="text-slate-500">Q:</span> <span class="text-white">2,08 m³/h</span></div>
+              <div><span class="text-slate-500">H<sub>m</sub>:</span> <span class="text-white">1,44 m</span></div>
+              <div><span class="text-slate-500">P<sub>inst</sub>:</span> <span class="text-white">0,37 kW (comercial)</span></div>
+              <div><span class="text-slate-500">Material:</span> <span class="text-white">Aço inox 304</span></div>
+              <div><span class="text-slate-500">Selo:</span> <span class="text-white">Mecânico simples</span></div>
+              <div><span class="text-slate-500">Config.:</span> <span class="text-white">Simples</span></div>
+              <div><span class="text-slate-500">Qtde total:</span> <span class="text-white">1 unidade</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== P-104 ==================== -->
+      <div id="P104" class="mb-16 no-break">
+        <div class="pump-header rounded-t-xl p-5 border border-amber-700/50" style="background: linear-gradient(135deg, #3d2c0f 0%, #1e293b 100%);">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h3 class="text-2xl font-bold text-white">P-104</h3>
+              <p class="text-amber-300 text-sm">Bombeamento de Resíduo Orgânico → TQ-03</p>
+            </div>
+            <span class="px-3 py-1 bg-amber-500/20 text-amber-400 text-xs font-semibold rounded-full border border-amber-500/40">CASO ESPECIAL — MOINEAU</span>
+          </div>
+        </div>
+        <div class="bg-card rounded-b-xl border border-t-0 border-slate-600 p-6 space-y-5">
+
+          <div class="danger-box rounded-lg p-5">
+            <div class="text-red-400 font-semibold text-sm mb-2">POR QUE NÃO CENTRÍFUGA?</div>
+            <p class="text-slate-300 text-sm mb-2">
+              O resíduo orgânico tem viscosidade <strong class="text-red-400">μ = 0,800 Pa·s</strong> — isso é
+              <strong class="text-white">800 vezes mais viscoso que a água</strong>. Pense em um fluido com a consistência de mel claro.
+            </p>
+            <p class="text-slate-300 text-sm mb-2">
+              Verificando o número de Reynolds para este fluido em uma tubulação DN 50 (v ≈ 0,3 m/s):
+            </p>
+            <div class="mono text-slate-300 text-sm bg-slate-900/50 p-2 rounded">
+              Re = ρ × v × D / μ = 1080 × 0,3 × 0,050 / 0,800 = <strong class="text-red-400">20,3 → LAMINAR</strong>
+            </div>
+            <p class="text-slate-300 text-sm mt-2">
+              Bombas centrífugas dependem de <em>turbulência</em> para transferir energia ao fluido (pelo impelidor).
+              Com Re ≈ 20 (laminar), a centrífuga <strong class="text-red-400">não consegue operar eficientemente</strong> — a eficiência cai para 20–30%.
+              A solução é uma bomba de <strong class="text-amber-300">deslocamento positivo tipo Moineau (cavidade progressiva)</strong>.
+            </p>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-2">Dados de Entrada</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Fluido:</span> <span class="text-white">Resíduo orgânico</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ρ =</span> <span class="text-white">1080 kg/m³</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">μ =</span> <span class="text-amber-400 font-bold">0,800 Pa·s</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Q =</span> <span class="text-white">50 m³/d = 2,08 m³/h</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">H<sub>geo</sub> =</span> <span class="text-white">1,2 m</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ΔP =</span> <span class="text-white">0 kPa</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">η<sub>bomba</sub> =</span> <span class="text-white">0,55 (Moineau)</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Tipo:</span> <span class="text-amber-400">Moineau (desloc. positivo)</span></div>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-2">Cálculo Passo a Passo</h4>
+            <div class="space-y-3 text-sm">
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 1:</strong>
+                <span class="mono text-slate-300">Q = 50 / 86400 = <strong class="text-white">5,787 × 10<sup>−4</sup> m³/s</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 2:</strong>
+                <span class="mono text-slate-300">H<sub>pressão</sub> = 0 m</span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 3 (perdas maiores — fluido viscoso, adotar 30%):</strong>
+                <span class="mono text-slate-300">H<sub>perda</sub> = 0,30 × 1,2 = <strong class="text-white">0,36 m</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 4:</strong>
+                <span class="mono text-slate-300">H<sub>m</sub> = 1,2 + 0 + 0,36 = <strong class="text-white">1,56 m</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 5:</strong>
+                <span class="mono text-slate-300">P<sub>hid</sub> = 1080 × 9,81 × 5,787×10<sup>−4</sup> × 1,56 = <strong class="text-white">9,57 W</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 6 (η<sub>bomba</sub> = 0,55):</strong>
+                <span class="mono text-slate-300">P<sub>eixo</sub> = 9,57 / 0,55 = <strong class="text-white">17,4 W</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 7:</strong>
+                <span class="mono text-slate-300">P<sub>motor</sub> = 17,4 / 0,93 = <strong class="text-white">18,7 W</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 8:</strong>
+                <span class="mono text-slate-300">P<sub>instalada</sub> = 18,7 × 1,15 = <strong class="text-white">21,5 W ≈ 0,022 kW</strong></span>
+                <div class="text-slate-500 text-xs mt-1">Comercial: <strong class="text-amber-400">0,55 kW (0,75 cv)</strong> — Moineau tem motor mínimo maior.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="verify-box rounded-lg p-4">
+            <div class="text-green-400 font-semibold text-sm mb-2">VERIFICAÇÃO — Ordem de grandeza</div>
+            <p class="text-sm text-slate-300">
+              Potência hidráulica ≈ 10 W para uma vazão pequena (2 m³/h) e head baixo (1,5 m) é coerente.
+              Bombas Moineau pequenas tipicamente requerem 0,5–1,5 kW. <span class="text-green-400">✓ Plausível.</span>
+            </p>
+          </div>
+
+          <div class="intuition-box rounded-lg p-4">
+            <div class="text-amber-400 font-semibold text-sm mb-2">INTERPRETAÇÃO</div>
+            <p class="text-slate-300 text-sm">
+              Apesar da potência calculada ser mínima, a bomba Moineau é a <strong class="text-white">única opção</strong> para μ = 0,800 Pa·s.
+              O princípio de cavidade progressiva permite bombear fluidos viscosos e com sólidos sem perda de eficiência.
+              O estator elastomérico (NBR ou EPDM) se deforma ao redor do rotor helicoidal, criando câmaras fechadas que empurram o fluido progressivamente.
+            </p>
+          </div>
+
+          <div class="bg-slate-800 rounded-lg p-4 border border-slate-600">
+            <h4 class="text-sm font-bold text-white mb-2">Quadro-Resumo P-104</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+              <div><span class="text-slate-500">Tipo:</span> <span class="text-amber-400">Moineau (cavidade progressiva)</span></div>
+              <div><span class="text-slate-500">Q:</span> <span class="text-white">2,08 m³/h</span></div>
+              <div><span class="text-slate-500">H<sub>m</sub>:</span> <span class="text-white">1,56 m</span></div>
+              <div><span class="text-slate-500">P<sub>inst</sub>:</span> <span class="text-white">0,55 kW (comercial)</span></div>
+              <div><span class="text-slate-500">Material:</span> <span class="text-white">Aço inox 316L / estator EPDM</span></div>
+              <div><span class="text-slate-500">Config.:</span> <span class="text-white">Simples</span></div>
+              <div><span class="text-slate-500">Qtde total:</span> <span class="text-white">1 unidade</span></div>
+              <div><span class="text-slate-500">Re ≈</span> <span class="text-red-400">20 (laminar)</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== P-105 A/B ==================== -->
+      <div id="P105" class="mb-16 no-break">
+        <div class="pump-header rounded-t-xl p-5 border border-slate-600">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h3 class="text-2xl font-bold text-white">P-105 A/B</h3>
+              <p class="text-sky-300 text-sm">Bombeamento de Lama Mista (Misturador) → Biorreatores R-101 a R-104</p>
+            </div>
+            <span class="px-3 py-1 bg-sky-500/20 text-sky-400 text-xs font-semibold rounded-full border border-sky-500/40">DUTY / STANDBY</span>
+          </div>
+        </div>
+        <div class="bg-card rounded-b-xl border border-t-0 border-slate-600 p-6 space-y-5">
+
+          <div class="intuition-box rounded-lg p-4">
+            <div class="text-amber-400 font-semibold text-sm mb-2">BOMBA CRÍTICA</div>
+            <p class="text-slate-300 text-sm">
+              Esta é a <strong class="text-white">bomba mais importante da planta</strong>. Ela alimenta os biorreatores — se parar,
+              a produção de biogás cessa. Tem a maior vazão volumétrica (500 m³/d) e o maior desnível (7,27 m, do misturador
+              na cota 5 m para os biorreatores na cota 12,27 m).
+            </p>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-2">Dados de Entrada</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Fluido:</span> <span class="text-white">Lama mista</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ρ =</span> <span class="text-white">1022 kg/m³</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">μ =</span> <span class="text-white">0,045 Pa·s</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Q =</span> <span class="text-white">500 m³/d = 20,83 m³/h</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">H<sub>geo</sub> =</span> <span class="text-white">7,27 m</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ΔP =</span> <span class="text-white">0 kPa</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Config.:</span> <span class="text-sky-400">A/B (Duty/Standby)</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Tipo:</span> <span class="text-white">Centrífuga canal aberto</span></div>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-2">Cálculo Passo a Passo</h4>
+            <div class="space-y-3 text-sm">
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 1:</strong>
+                <span class="mono text-slate-300">Q = 500 / 86400 = <strong class="text-white">5,787 × 10<sup>−3</sup> m³/s</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 2:</strong>
+                <span class="mono text-slate-300">H<sub>pressão</sub> = 0 m</span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 3:</strong>
+                <span class="mono text-slate-300">H<sub>perda</sub> = 0,20 × 7,27 = <strong class="text-white">1,454 m</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 4:</strong>
+                <span class="mono text-slate-300">H<sub>m</sub> = 7,27 + 0 + 1,454 = <strong class="text-white">8,724 m</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 5:</strong>
+                <span class="mono text-slate-300">P<sub>hid</sub> = 1022 × 9,81 × 5,787×10<sup>−3</sup> × 8,724 = <strong class="text-white">506 W</strong> = 0,506 kW</span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 6 (η<sub>bomba</sub> = 0,60 — canal aberto, lama):</strong>
+                <span class="mono text-slate-300">P<sub>eixo</sub> = 506 / 0,60 = <strong class="text-white">843 W</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 7:</strong>
+                <span class="mono text-slate-300">P<sub>motor</sub> = 843 / 0,93 = <strong class="text-white">907 W</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 8:</strong>
+                <span class="mono text-slate-300">P<sub>instalada</sub> = 907 × 1,15 = <strong class="text-white">1043 W ≈ 1,04 kW</strong></span>
+                <div class="text-slate-500 text-xs mt-1">Comercial: <strong class="text-amber-400">1,5 kW (2 cv)</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="verify-box rounded-lg p-4">
+            <div class="text-green-400 font-semibold text-sm mb-2">VERIFICAÇÃO — NPSH</div>
+            <div class="text-sm text-slate-300 mono">
+              NPSH<sub>d</sub> ≈ (101325 − 2340)/(1022×9,81) + 0,5 − 0,3 = 9,87 + 0,2 = <strong class="text-green-400">10,1 m → OK</strong>
+            </div>
+            <p class="text-slate-400 text-xs mt-1">Sucção do misturador com nível ≈ 0,5 m acima do eixo da bomba.</p>
+          </div>
+
+          <div class="bg-slate-800/50 rounded p-3 text-sm">
+            <strong class="text-sky-400">Velocidade</strong> (DN 100, D<sub>int</sub> ≈ 0,102 m):
+            <span class="mono text-slate-300">v = 5,787×10<sup>−3</sup> / (π×0,102²/4) = <strong class="text-white">0,71 m/s</strong> <span class="text-green-400">✓</span> (faixa 0,5–2,0 m/s)</span>
+          </div>
+
+          <div class="intuition-box rounded-lg p-4">
+            <div class="text-amber-400 font-semibold text-sm mb-2">INTERPRETAÇÃO</div>
+            <p class="text-slate-300 text-sm">
+              1,5 kW por bomba (×2 unidades = 3 kW instalado). A maior parte da energia (≈ 83%) vai para vencer
+              o desnível de 7,27 m. Canal aberto é essencial porque a lama mista contém fibras, areia e sólidos grosseiros
+              que entupiriam um impelidor fechado. A configuração A/B é obrigatória: parar a alimentação dos biorreatores
+              por mais de 2 horas compromete a biologia anaeróbia.
+            </p>
+          </div>
+
+          <div class="bg-slate-800 rounded-lg p-4 border border-slate-600">
+            <h4 class="text-sm font-bold text-white mb-2">Quadro-Resumo P-105 A/B</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+              <div><span class="text-slate-500">Tipo:</span> <span class="text-white">Centrífuga canal aberto</span></div>
+              <div><span class="text-slate-500">Q:</span> <span class="text-white">20,83 m³/h</span></div>
+              <div><span class="text-slate-500">H<sub>m</sub>:</span> <span class="text-white">8,72 m</span></div>
+              <div><span class="text-slate-500">P<sub>inst</sub>:</span> <span class="text-white">1,5 kW (comercial)</span></div>
+              <div><span class="text-slate-500">Material:</span> <span class="text-white">Aço inox 316L</span></div>
+              <div><span class="text-slate-500">Selo:</span> <span class="text-white">Mecânico duplo</span></div>
+              <div><span class="text-slate-500">Config.:</span> <span class="text-sky-400">Duty/Standby (A/B)</span></div>
+              <div><span class="text-slate-500">Qtde total:</span> <span class="text-white">2 unidades</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== P-106 ==================== -->
+      <div id="P106" class="mb-16 no-break">
+        <div class="pump-header rounded-t-xl p-5 border border-red-700/50" style="background: linear-gradient(135deg, #3d1a1a 0%, #1e293b 100%);">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h3 class="text-2xl font-bold text-white">P-106</h3>
+              <p class="text-red-300 text-sm">Bombeamento de Água → Topo da Coluna C-101 (Absorção HPWS a 10 bar)</p>
+            </div>
+            <span class="px-3 py-1 bg-red-500/20 text-red-400 text-xs font-semibold rounded-full border border-red-500/40">CASO ESPECIAL — MULTI-ESTÁGIO</span>
+          </div>
+        </div>
+        <div class="bg-card rounded-b-xl border border-t-0 border-slate-600 p-6 space-y-5">
+
+          <div class="danger-box rounded-lg p-5">
+            <div class="text-red-400 font-semibold text-sm mb-2">POR QUE MULTI-ESTÁGIO?</div>
+            <p class="text-slate-300 text-sm mb-2">
+              A coluna de absorção C-101 opera a <strong class="text-red-400">≈ 10 bar</strong>. A água vem de um reservatório
+              atmosférico (≈ 1 bar). Portanto, a bomba precisa fornecer ΔP ≈ 9 bar = <strong class="text-white">900 kPa</strong>.
+            </p>
+            <p class="text-slate-300 text-sm mb-2">
+              Convertendo para metros de coluna d'água: H<sub>pressão</sub> = 900000 / (998 × 9,81) = <strong class="text-white">91,9 m</strong>.
+            </p>
+            <p class="text-slate-300 text-sm">
+              Uma centrífuga de estágio único gera tipicamente 30–50 m de head. Para 99+ m de head total,
+              precisamos de <strong class="text-amber-300">3–4 estágios em série</strong> dentro do mesmo corpo de bomba.
+            </p>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-2">Dados de Entrada</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Fluido:</span> <span class="text-white">Água</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ρ =</span> <span class="text-white">998 kg/m³</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">μ =</span> <span class="text-white">0,001 Pa·s</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Q =</span> <span class="text-white">1221,6 m³/d = 50,9 m³/h</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">H<sub>geo</sub> =</span> <span class="text-white">7,28 m</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ΔP =</span> <span class="text-red-400 font-bold">900 kPa</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">η<sub>bomba</sub> =</span> <span class="text-white">0,70 (multi-estágio)</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Tipo:</span> <span class="text-sky-400">Centrífuga multi-estágio</span></div>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-2">Cálculo Passo a Passo</h4>
+            <div class="space-y-3 text-sm">
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 1:</strong>
+                <span class="mono text-slate-300">Q = 1221,6 / 86400 = <strong class="text-white">1,414 × 10<sup>−2</sup> m³/s</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 2 — Altura de pressão (componente dominante!):</strong>
+                <div class="mono text-slate-300 mt-1">H<sub>pressão</sub> = 900000 / (998 × 9,81) = <strong class="text-white">91,93 m</strong></div>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 3 — Perdas estimadas:</strong>
+                <div class="mono text-slate-300 mt-1">H<sub>perda</sub> = 0,20 × (7,28 + 91,93) = 0,20 × 99,21 = <strong class="text-white">19,84 m</strong></div>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 4:</strong>
+                <div class="mono text-slate-300 mt-1">H<sub>m</sub> = 7,28 + 91,93 + 19,84 = <strong class="text-white">119,1 m</strong></div>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 5:</strong>
+                <div class="mono text-slate-300 mt-1">P<sub>hid</sub> = 998 × 9,81 × 1,414×10<sup>−2</sup> × 119,1 = <strong class="text-white">16 490 W</strong> = 16,49 kW</div>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 6 (η<sub>bomba</sub> = 0,70):</strong>
+                <span class="mono text-slate-300">P<sub>eixo</sub> = 16490 / 0,70 = <strong class="text-white">23 557 W</strong> = 23,56 kW</span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 7:</strong>
+                <span class="mono text-slate-300">P<sub>motor</sub> = 23557 / 0,93 = <strong class="text-white">25 330 W</strong> = 25,33 kW</span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 8:</strong>
+                <span class="mono text-slate-300">P<sub>instalada</sub> = 25330 × 1,15 = <strong class="text-white">29 130 W ≈ 29,1 kW</strong></span>
+                <div class="text-slate-500 text-xs mt-1">Comercial: <strong class="text-amber-400">30 kW (40 cv)</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="verify-box rounded-lg p-4">
+            <div class="text-green-400 font-semibold text-sm mb-2">VERIFICAÇÃO — Ordem de grandeza e número de estágios</div>
+            <div class="text-sm text-slate-300">
+              <p>H<sub>m</sub> = 119 m. Com ~30 m/estágio → precisamos de <strong class="text-green-400">4 estágios</strong>.</p>
+              <p class="mt-1">30 kW para bombear 51 m³/h a 119 m → potência específica = 30/51 = 0,59 kW/(m³/h). Bombas multi-estágio dessa faixa: 0,3–0,8 kW/(m³/h). <span class="text-green-400">✓ Plausível.</span></p>
+            </div>
+          </div>
+
+          <div class="verify-box rounded-lg p-4">
+            <div class="text-green-400 font-semibold text-sm mb-2">VERIFICAÇÃO — NPSH</div>
+            <div class="text-sm text-slate-300 mono">
+              NPSH<sub>d</sub> ≈ (101325 − 2340)/(998×9,81) + 1,0 − 0,5 = 10,10 + 0,5 = <strong class="text-green-400">10,6 m</strong>
+            </div>
+            <p class="text-slate-400 text-xs mt-1">Sucção afogada do reservatório de água. NPSH<sub>r</sub> típico multi-estágio ≈ 3–5 m. <strong class="text-green-400">OK.</strong></p>
+          </div>
+
+          <div class="bg-slate-800/50 rounded p-3 text-sm">
+            <strong class="text-sky-400">Velocidade</strong> (DN 100, D<sub>int</sub> ≈ 0,102 m):
+            <span class="mono text-slate-300">v = 1,414×10<sup>−2</sup> / (π×0,102²/4) = <strong class="text-white">1,73 m/s</strong> <span class="text-green-400">✓</span> (faixa 1,0–3,0 m/s para água)</span>
+          </div>
+
+          <div class="intuition-box rounded-lg p-4">
+            <div class="text-amber-400 font-semibold text-sm mb-2">INTERPRETAÇÃO</div>
+            <p class="text-slate-300 text-sm">
+              A P-106 é, de longe, a <strong class="text-white">bomba mais potente da planta</strong> (30 kW). Mais de 90% da energia
+              vai para vencer a pressão da coluna (92 m de head de pressão vs. 7 m de desnível geométrico).
+              É a bomba que consome mais eletricidade na planta — cerca de <strong class="text-white">262 MWh/ano</strong> se operando
+              continuamente (30 kW × 8760 h). Otimizar a recirculação de água na C-101 impacta diretamente o OPEX.
+            </p>
+          </div>
+
+          <div class="bg-slate-800 rounded-lg p-4 border border-slate-600">
+            <h4 class="text-sm font-bold text-white mb-2">Quadro-Resumo P-106</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+              <div><span class="text-slate-500">Tipo:</span> <span class="text-sky-400">Centrífuga multi-estágio (4 estágios)</span></div>
+              <div><span class="text-slate-500">Q:</span> <span class="text-white">50,9 m³/h</span></div>
+              <div><span class="text-slate-500">H<sub>m</sub>:</span> <span class="text-white">119,1 m</span></div>
+              <div><span class="text-slate-500">P<sub>inst</sub>:</span> <span class="text-white">30 kW (comercial)</span></div>
+              <div><span class="text-slate-500">Material:</span> <span class="text-white">Aço inox 316</span></div>
+              <div><span class="text-slate-500">Selo:</span> <span class="text-white">Mecânico duplo, cartucho</span></div>
+              <div><span class="text-slate-500">Config.:</span> <span class="text-white">Simples (com VFD)</span></div>
+              <div><span class="text-slate-500">Qtde total:</span> <span class="text-white">1 unidade</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== P-107 ==================== -->
+      <div id="P107" class="mb-16 no-break">
+        <div class="pump-header rounded-t-xl p-5 border border-slate-600">
+          <h3 class="text-2xl font-bold text-white">P-107</h3>
+          <p class="text-sky-300 text-sm">Bombeamento de Efluente da C-101 → Tanque Flash (V-101)</p>
+        </div>
+        <div class="bg-card rounded-b-xl border border-t-0 border-slate-600 p-6 space-y-5">
+
+          <div>
+            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-2">Dados de Entrada</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Fluido:</span> <span class="text-white">Água + CO₂ dissolvido</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ρ =</span> <span class="text-white">1002 kg/m³</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">μ =</span> <span class="text-white">0,001 Pa·s</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Q =</span> <span class="text-white">1221,6 m³/d = 50,9 m³/h</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">H<sub>geo</sub> =</span> <span class="text-white">−0,3 m (leve descida)</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ΔP =</span> <span class="text-white">0 kPa</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">η<sub>bomba</sub> =</span> <span class="text-white">0,75 (standard, água)</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Tipo:</span> <span class="text-white">Centrífuga standard</span></div>
+            </div>
+          </div>
+
+          <div class="intuition-box rounded-lg p-4">
+            <div class="text-amber-400 font-semibold text-sm mb-2">NOTA — Desnível ligeiramente negativo</div>
+            <p class="text-slate-300 text-sm">
+              H<sub>geo</sub> = −0,3 m. O efluente desce ligeiramente do fundo da coluna para o tanque flash.
+              Mas a gravidade sozinha não basta — ainda há perdas por atrito na tubulação e nas válvulas de controle.
+              Para fins de dimensionamento conservador, usamos |H<sub>geo</sub>| = 0,3 m com a heurística de perdas
+              aplicada sobre o head absoluto mínimo.
+            </p>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-2">Cálculo Passo a Passo</h4>
+            <div class="space-y-3 text-sm">
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 1:</strong>
+                <span class="mono text-slate-300">Q = 1,414 × 10<sup>−2</sup> m³/s</span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 2:</strong>
+                <span class="mono text-slate-300">H<sub>pressão</sub> = 0 m (flash opera a pressão reduzida, mas controlado por válvula)</span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 3 — H<sub>geo</sub> negativo, mas adotamos H<sub>m</sub> mínimo conservador:</strong>
+                <div class="mono text-slate-300 mt-1">H<sub>geo,efetivo</sub> = max(−0,3 + perdas, H<sub>min</sub>) → adotar H<sub>m</sub> = <strong class="text-white">3,0 m</strong> (mínimo para válvula de controle + tubulação)</div>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 4:</strong>
+                <span class="mono text-slate-300">H<sub>m</sub> = <strong class="text-white">3,0 m</strong> (mínimo operacional conservador)</span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 5:</strong>
+                <span class="mono text-slate-300">P<sub>hid</sub> = 1002 × 9,81 × 1,414×10<sup>−2</sup> × 3,0 = <strong class="text-white">417 W</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 6 (η = 0,75):</strong>
+                <span class="mono text-slate-300">P<sub>eixo</sub> = 417 / 0,75 = <strong class="text-white">556 W</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 7:</strong>
+                <span class="mono text-slate-300">P<sub>motor</sub> = 556 / 0,93 = <strong class="text-white">598 W</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 8:</strong>
+                <span class="mono text-slate-300">P<sub>instalada</sub> = 598 × 1,15 = <strong class="text-white">688 W ≈ 0,69 kW</strong></span>
+                <div class="text-slate-500 text-xs mt-1">Comercial: <strong class="text-amber-400">1,1 kW (1,5 cv)</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="verify-box rounded-lg p-4">
+            <div class="text-green-400 font-semibold text-sm mb-2">VERIFICAÇÃO — NPSH (cuidado com CO₂ dissolvido!)</div>
+            <div class="text-sm text-slate-300">
+              <p>O efluente contém CO₂ dissolvido. Na despressurização parcial na sucção, pode haver liberação de gás. Recomenda-se:</p>
+              <ul class="mt-1 ml-4 list-disc text-slate-400">
+                <li>Sucção afogada obrigatória (nível da coluna acima da bomba)</li>
+                <li>Tubulação de sucção curta e sem redução brusca de diâmetro</li>
+                <li>NPSH<sub>d</sub> com margem extra (≥ 2 m sobre NPSH<sub>r</sub>)</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="bg-slate-800 rounded-lg p-4 border border-slate-600">
+            <h4 class="text-sm font-bold text-white mb-2">Quadro-Resumo P-107</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+              <div><span class="text-slate-500">Tipo:</span> <span class="text-white">Centrífuga standard</span></div>
+              <div><span class="text-slate-500">Q:</span> <span class="text-white">50,9 m³/h</span></div>
+              <div><span class="text-slate-500">H<sub>m</sub>:</span> <span class="text-white">3,0 m</span></div>
+              <div><span class="text-slate-500">P<sub>inst</sub>:</span> <span class="text-white">1,1 kW (comercial)</span></div>
+              <div><span class="text-slate-500">Material:</span> <span class="text-white">Aço inox 316L</span></div>
+              <div><span class="text-slate-500">Selo:</span> <span class="text-white">Mecânico simples</span></div>
+              <div><span class="text-slate-500">Config.:</span> <span class="text-white">Simples</span></div>
+              <div><span class="text-slate-500">Qtde total:</span> <span class="text-white">1 unidade</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== P-108 ==================== -->
+      <div id="P108" class="mb-16 no-break">
+        <div class="pump-header rounded-t-xl p-5 border border-green-700/50" style="background: linear-gradient(135deg, #0f3d1a 0%, #1e293b 100%);">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h3 class="text-2xl font-bold text-white">P-108</h3>
+              <p class="text-green-300 text-sm">Bombeamento de Digestato → Armazenamento</p>
+            </div>
+            <span class="px-3 py-1 bg-green-500/20 text-green-400 text-xs font-semibold rounded-full border border-green-500/40">POSSÍVEL GRAVIDADE!</span>
+          </div>
+        </div>
+        <div class="bg-card rounded-b-xl border border-t-0 border-slate-600 p-6 space-y-5">
+
+          <div class="verify-box rounded-lg p-5">
+            <div class="text-green-400 font-semibold text-sm mb-2">ANÁLISE — ESCOAMENTO POR GRAVIDADE?</div>
+            <p class="text-slate-300 text-sm mb-3">
+              H<sub>geo</sub> = −8,24 m (biorreatores a cota 12 m, armazenamento a cota ~4 m). A gravidade fornece 8,24 m de "head gratuito".
+              Se as perdas por atrito forem menores que 8,24 m, não precisamos de bomba!
+            </p>
+            <div class="mono text-sm text-slate-300 bg-slate-900/50 p-3 rounded mb-3">
+              H<sub>perda,estimado</sub> = 0,20 × |H<sub>geo</sub>| = 0,20 × 8,24 = <strong class="text-white">1,65 m</strong>
+            </div>
+            <p class="text-slate-300 text-sm">
+              |H<sub>geo</sub>| = 8,24 m ≫ H<sub>perda</sub> = 1,65 m → <strong class="text-green-400">Gravidade é suficiente!</strong>
+              Sobram 8,24 − 1,65 = <strong class="text-white">6,59 m</strong> de margem.
+            </p>
+            <p class="text-slate-300 text-sm mt-2">
+              <strong class="text-white">Decisão de projeto:</strong> Instalar bomba Moineau como <em>booster</em> de segurança para:
+              (a) garantir vazão mínima em caso de entupimento parcial, (b) permitir manutenção da tubulação,
+              (c) compensar eventual aumento de viscosidade em dias frios. Dimensionar para head mínimo.
+            </p>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-2">Dados de Entrada</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Fluido:</span> <span class="text-white">Lama digerida (digestato)</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ρ =</span> <span class="text-white">1015 kg/m³</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">μ =</span> <span class="text-white">0,030 Pa·s</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Q =</span> <span class="text-white">425 m³/d = 17,71 m³/h</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">H<sub>geo</sub> =</span> <span class="text-green-400 font-bold">−8,24 m</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ΔP =</span> <span class="text-white">0 kPa</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">η<sub>bomba</sub> =</span> <span class="text-white">0,55 (Moineau)</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Tipo:</span> <span class="text-amber-400">Parafuso (Moineau) — booster</span></div>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-2">Cálculo — Bomba Booster (Head mínimo conservador)</h4>
+            <div class="space-y-3 text-sm">
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 1:</strong>
+                <span class="mono text-slate-300">Q = 425 / 86400 = <strong class="text-white">4,919 × 10<sup>−3</sup> m³/s</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 2 — H<sub>m</sub> para booster (conservador: vencer perdas extras + margem):</strong>
+                <div class="mono text-slate-300 mt-1">H<sub>m,booster</sub> = <strong class="text-white">3,0 m</strong> (compensar entupimento parcial, viscosidade variável)</div>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 3:</strong>
+                <span class="mono text-slate-300">P<sub>hid</sub> = 1015 × 9,81 × 4,919×10<sup>−3</sup> × 3,0 = <strong class="text-white">147 W</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 4 (η = 0,55):</strong>
+                <span class="mono text-slate-300">P<sub>eixo</sub> = 147 / 0,55 = <strong class="text-white">267 W</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 5:</strong>
+                <span class="mono text-slate-300">P<sub>motor</sub> = 267 / 0,93 = <strong class="text-white">287 W</strong></span>
+              </div>
+              <div class="bg-slate-800/50 rounded p-3">
+                <strong class="text-sky-400">Passo 6:</strong>
+                <span class="mono text-slate-300">P<sub>instalada</sub> = 287 × 1,15 = <strong class="text-white">330 W ≈ 0,33 kW</strong></span>
+                <div class="text-slate-500 text-xs mt-1">Comercial: <strong class="text-amber-400">0,75 kW (1 cv)</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="intuition-box rounded-lg p-4">
+            <div class="text-amber-400 font-semibold text-sm mb-2">INTERPRETAÇÃO</div>
+            <p class="text-slate-300 text-sm">
+              O escoamento é <strong class="text-green-400">predominantemente por gravidade</strong>. A bomba Moineau atua como reserva de segurança.
+              Em operação normal, pode operar desligada (by-pass aberto). Moineau escolhida por compatibilidade com digestato
+              (sólidos em suspensão, viscosidade variável). Na prática, essa bomba pode operar poucas horas por dia,
+              reduzindo significativamente o consumo energético.
+            </p>
+          </div>
+
+          <div class="bg-slate-800 rounded-lg p-4 border border-slate-600">
+            <h4 class="text-sm font-bold text-white mb-2">Quadro-Resumo P-108</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+              <div><span class="text-slate-500">Tipo:</span> <span class="text-amber-400">Moineau — booster</span></div>
+              <div><span class="text-slate-500">Q:</span> <span class="text-white">17,71 m³/h</span></div>
+              <div><span class="text-slate-500">H<sub>m</sub>:</span> <span class="text-white">3,0 m (booster)</span></div>
+              <div><span class="text-slate-500">P<sub>inst</sub>:</span> <span class="text-white">0,75 kW (comercial)</span></div>
+              <div><span class="text-slate-500">Material:</span> <span class="text-white">Aço inox 316L / EPDM</span></div>
+              <div><span class="text-slate-500">Config.:</span> <span class="text-green-400">Gravidade + booster</span></div>
+              <div><span class="text-slate-500">Qtde total:</span> <span class="text-white">1 unidade</span></div>
+              <div><span class="text-slate-500">Regime:</span> <span class="text-green-400">Primariamente gravidade</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =========================================================== -->
+    <!-- SEÇÃO 4 — TABELA RESUMO                                     -->
+    <!-- =========================================================== -->
+    <section id="sec4">
+      <h2 class="text-3xl font-bold text-sky-400 border-b border-slate-700 pb-3 mb-8">4. Tabela Resumo — Todas as Bombas</h2>
+
+      <div class="overflow-x-auto mb-6">
+        <table class="text-sm w-full">
+          <thead>
+            <tr class="text-xs">
+              <th>Tag</th>
+              <th>Q [m³/h]</th>
+              <th>H<sub>m</sub> [m]</th>
+              <th>P<sub>hid</sub> [W]</th>
+              <th>P<sub>inst</sub> [kW]</th>
+              <th>P<sub>comercial</sub> [kW]</th>
+              <th>Tipo</th>
+              <th>Material</th>
+              <th>Config.</th>
+              <th>Obs.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="font-bold text-sky-400">P-101 A/B</td>
+              <td>13,33</td><td>1,80</td><td>66,7</td><td>0,14</td>
+              <td class="text-amber-400 font-bold">0,37</td>
+              <td>Centrífuga canal aberto</td><td>316L</td><td>A/B</td><td>Duty/Standby</td>
+            </tr>
+            <tr>
+              <td class="font-bold text-sky-400">P-102 A/B</td>
+              <td>3,33</td><td>1,80</td><td>16,6</td><td>0,034</td>
+              <td class="text-amber-400 font-bold">0,37</td>
+              <td>Centrífuga canal aberto</td><td>316L</td><td>A/B</td><td>Duty/Standby</td>
+            </tr>
+            <tr>
+              <td class="font-bold text-sky-400">P-103</td>
+              <td>2,08</td><td>1,44</td><td>8,6</td><td>0,015</td>
+              <td class="text-amber-400 font-bold">0,37</td>
+              <td>Centrífuga standard</td><td>304</td><td>Simples</td><td>—</td>
+            </tr>
+            <tr>
+              <td class="font-bold text-amber-400">P-104</td>
+              <td>2,08</td><td>1,56</td><td>9,6</td><td>0,022</td>
+              <td class="text-amber-400 font-bold">0,55</td>
+              <td class="text-amber-400">Moineau</td><td>316L/EPDM</td><td>Simples</td><td>μ=0,8 Pa·s (laminar)</td>
+            </tr>
+            <tr>
+              <td class="font-bold text-sky-400">P-105 A/B</td>
+              <td>20,83</td><td>8,72</td><td>506</td><td>1,04</td>
+              <td class="text-amber-400 font-bold">1,50</td>
+              <td>Centrífuga canal aberto</td><td>316L</td><td>A/B</td><td>Bomba crítica</td>
+            </tr>
+            <tr class="bg-red-900/20">
+              <td class="font-bold text-red-400">P-106</td>
+              <td>50,9</td><td class="text-red-400">119,1</td><td>16 490</td><td>29,1</td>
+              <td class="text-red-400 font-bold">30,0</td>
+              <td class="text-red-400">Multi-estágio (4 est.)</td><td>316</td><td>Simples+VFD</td><td>Maior consumo!</td>
+            </tr>
+            <tr>
+              <td class="font-bold text-sky-400">P-107</td>
+              <td>50,9</td><td>3,0</td><td>417</td><td>0,69</td>
+              <td class="text-amber-400 font-bold">1,10</td>
+              <td>Centrífuga standard</td><td>316L</td><td>Simples</td><td>CO₂ dissolvido</td>
+            </tr>
+            <tr class="bg-green-900/20">
+              <td class="font-bold text-green-400">P-108</td>
+              <td>17,71</td><td>3,0</td><td>147</td><td>0,33</td>
+              <td class="text-green-400 font-bold">0,75</td>
+              <td class="text-green-400">Moineau (booster)</td><td>316L/EPDM</td><td>Gravidade+boost</td><td>Grav. predominante</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="bg-slate-700 font-bold">
+              <td colspan="5" class="text-right text-white">TOTAL POTÊNCIA INSTALADA:</td>
+              <td class="text-amber-400 text-lg" colspan="5">35,41 kW (incluindo reservas A/B: 36,15 kW)</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="verify-box rounded-lg p-4">
+        <div class="text-green-400 font-semibold text-sm mb-2">VERIFICAÇÃO — Distribuição de potência</div>
+        <p class="text-sm text-slate-300">
+          A P-106 (30 kW) representa <strong class="text-green-400">≈ 85%</strong> da potência total de bombeamento.
+          Isso é esperado: é a única bomba que trabalha contra alta pressão (10 bar).
+          As demais bombas (≈ 5 kW somadas) trabalham apenas contra desníveis pequenos (1–9 m).
+          Ordem de grandeza coerente com plantas de biogás dessa escala (500 m³/d de substrato).
+          <span class="text-green-400">✓ Plausível.</span>
+        </p>
+      </div>
+    </section>
+
+    <!-- =========================================================== -->
+    <!-- SEÇÃO 5 — DESSECADOR S-101                                  -->
+    <!-- =========================================================== -->
+    <section id="sec5">
+      <h2 class="text-3xl font-bold text-sky-400 border-b border-slate-700 pb-3 mb-8">5. Dessecador S-101 — Secagem do Biometano (ANP 685/2017)</h2>
+
+      <!-- 5.1 -->
+      <div id="sec5-1" class="mb-10">
+        <h3 class="text-xl font-semibold text-white mb-4">5.1 Por que precisamos de um dessecador?</h3>
+
+        <div class="intuition-box rounded-lg p-5 mb-4">
+          <div class="text-amber-400 font-semibold text-sm mb-2">INTUIÇÃO FÍSICA</div>
+          <p class="text-slate-300 leading-relaxed">
+            O biogás que sai da coluna de absorção (C-101) está <strong class="text-amber-300">saturado em vapor d'água</strong>
+            — ou seja, contém a máxima quantidade de água que pode existir na fase gasosa àquela temperatura e pressão.
+          </p>
+          <p class="text-slate-300 leading-relaxed mt-2">
+            Se esse gás for injetado na rede com toda essa umidade, ao resfriar nas tubulações da rede de distribuição
+            (especialmente à noite ou em altitudes elevadas), a água <strong class="text-red-400">condensará</strong> dentro da tubulação.
+            Água líquida em gasoduto causa:
+          </p>
+          <ul class="text-slate-300 text-sm ml-4 mt-2 space-y-1">
+            <li>• <strong class="text-red-400">Corrosão</strong> — especialmente se houver traços de H₂S ou CO₂ residuais</li>
+            <li>• <strong class="text-red-400">Golpe de aríete</strong> — acúmulo de água em pontos baixos causa impactos hidráulicos</li>
+            <li>• <strong class="text-red-400">Bloqueio de fluxo</strong> — plugs de água podem obstruir parcialmente a tubulação</li>
+            <li>• <strong class="text-red-400">Formação de hidratos</strong> — gelo de gás em alta pressão/baixa temperatura</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 5.2 -->
+      <div id="sec5-2" class="mb-10">
+        <h3 class="text-xl font-semibold text-white mb-4">5.2 Especificação ANP 685/2017</h3>
+
+        <div class="formula-box rounded-lg p-5 mb-4">
+          <div class="text-sky-400 font-semibold text-sm mb-2">REQUISITO NORMATIVO</div>
+          <p class="text-slate-300 text-sm mb-3">
+            A <strong class="text-white">Resolução ANP nº 685/2017</strong> estabelece as especificações do biometano para
+            injeção na rede de gás canalizado. Requisito de umidade:
+          </p>
+          <table class="text-sm">
+            <tr><td class="pr-6 text-slate-400">Ponto de orvalho máximo:</td><td class="font-bold text-white">−45 °C</td><td class="text-slate-500 pl-4">(à pressão de entrega)</td></tr>
+            <tr><td class="text-slate-400">Corresponde a teor de umidade:</td><td class="font-bold text-white">≈ 7 mg H₂O / Nm³</td><td class="text-slate-500 pl-4"></td></tr>
+          </table>
+        </div>
+
+        <div class="danger-box rounded-lg p-4 mb-4">
+          <div class="text-red-400 font-semibold text-sm mb-2">PROBLEMA</div>
+          <p class="text-sm text-slate-300">
+            O biometano na saída da coluna C-101 está saturado a 10 bar e ~20°C:
+            umidade ≈ <strong class="text-red-400">1500–3000 mg H₂O/Nm³</strong>.
+            Precisamos reduzir para ≤ 7 mg/Nm³ — uma remoção de <strong class="text-white">&gt; 99,5%</strong> da umidade!
+          </p>
+        </div>
+      </div>
+
+      <!-- 5.3 -->
+      <div id="sec5-3" class="mb-10">
+        <h3 class="text-xl font-semibold text-white mb-4">5.3 Tecnologia Selecionada: Adsorção por Peneira Molecular (PSA)</h3>
+
+        <div class="grid md:grid-cols-2 gap-6 mb-6">
+          <div class="bg-card rounded-xl border border-sky-700/40 p-5">
+            <h4 class="text-lg font-bold text-sky-400 mb-3">Twin-Tower PSA</h4>
+            <p class="text-slate-400 text-sm mb-3">Pressure Swing Adsorption com peneira molecular 3Å ou 4Å</p>
+            <ul class="text-sm text-slate-300 space-y-2">
+              <li><strong class="text-white">Princípio:</strong> O gás úmido passa por um leito de material zeolítico (peneira molecular)
+                que possui poros de tamanho molecular (~3–4 Å) capazes de capturar seletivamente moléculas de H₂O.</li>
+              <li><strong class="text-white">Duas torres:</strong> Enquanto uma torre adsorve (seca o gás), a outra é regenerada
+                (despressurizada para liberar a água adsorvida).</li>
+              <li><strong class="text-white">Ciclo típico:</strong> 4–12 horas de adsorção, depois troca.</li>
+              <li><strong class="text-white">Vantagem:</strong> Atinge ponto de orvalho &lt; −70°C — muito abaixo do exigido (−45°C).</li>
+            </ul>
+          </div>
+          <div class="bg-card rounded-xl border border-slate-700 p-5">
+            <h4 class="text-lg font-bold text-slate-400 mb-3">Alternativa descartada: Glicol (TEG)</h4>
+            <p class="text-slate-400 text-sm mb-3">Absorção com trietileno glicol</p>
+            <ul class="text-sm text-slate-400 space-y-2">
+              <li>Amplamente usado em processamento de gás natural</li>
+              <li>Atinge ponto de orvalho ≈ −25 a −40°C → <strong class="text-red-400">insuficiente para ANP 685</strong></li>
+              <li>Requer coluna de absorção e refervedor de regeneração</li>
+              <li>Mais complexo e caro para a escala do ECOGAS (≈ 184 Nm³/h)</li>
+              <li>Overkill operacional para planta sem operador 24h</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5.4 -->
+      <div id="sec5-4" class="mb-10">
+        <h3 class="text-xl font-semibold text-white mb-4">5.4 Dimensionamento Simplificado</h3>
+
+        <div>
+          <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-2">Dados de Entrada</h4>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm mb-6">
+            <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Q<sub>biometano</sub> =</span> <span class="text-white">4406 Nm³/d = 183,6 Nm³/h</span></div>
+            <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">P<sub>operação</sub> =</span> <span class="text-white">10 bar</span></div>
+            <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">T<sub>operação</sub> =</span> <span class="text-white">≈ 20 °C</span></div>
+            <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Umidade entrada =</span> <span class="text-white">≈ 2000 mg/Nm³ (saturado)</span></div>
+            <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Umidade saída =</span> <span class="text-white">≤ 7 mg/Nm³ (ANP)</span></div>
+            <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Adsorvente =</span> <span class="text-white">Peneira molecular 4Å</span></div>
+          </div>
+        </div>
+
+        <div class="space-y-4 text-sm">
+          <div class="formula-box rounded-lg p-4">
+            <strong class="text-sky-400">Passo 1 — Água a remover por hora:</strong>
+            <div class="mono text-slate-300 mt-2">
+              ṁ<sub>água</sub> = (C<sub>entrada</sub> − C<sub>saída</sub>) × Q<sub>biometano</sub>
+            </div>
+            <div class="mono text-slate-300 mt-1">
+              ṁ<sub>água</sub> = (2000 − 7) × 183,6 / 10<sup>6</sup> = 1993 × 183,6 / 10<sup>6</sup>
+            </div>
+            <div class="mono text-white mt-1">
+              ṁ<sub>água</sub> = <strong>0,366 kg/h</strong>
+            </div>
+          </div>
+
+          <div class="formula-box rounded-lg p-4">
+            <strong class="text-sky-400">Passo 2 — Massa de adsorvente por ciclo:</strong>
+            <div class="mono text-slate-300 mt-2">
+              Capacidade de adsorção da peneira molecular 4Å: <strong class="text-white">20% do peso em água</strong> (0,20 kg H₂O / kg adsorvente)
+            </div>
+            <div class="mono text-slate-300 mt-2">
+              Ciclo de adsorção = 8 h (padrão para PSA de pequeno porte)
+            </div>
+            <div class="mono text-slate-300 mt-1">
+              m<sub>ads</sub> = ṁ<sub>água</sub> × t<sub>ciclo</sub> / capacidade = 0,366 × 8 / 0,20
+            </div>
+            <div class="mono text-white mt-1">
+              m<sub>ads</sub> = <strong>14,6 kg por torre</strong>
+            </div>
+          </div>
+
+          <div class="formula-box rounded-lg p-4">
+            <strong class="text-sky-400">Passo 3 — Com margem de projeto (50%):</strong>
+            <div class="mono text-white mt-2">
+              m<sub>ads,projeto</sub> = 14,6 × 1,50 = <strong>21,9 kg ≈ 22 kg por torre</strong>
+            </div>
+            <p class="text-slate-400 mt-2">Margem de 50% cobre: degradação do adsorvente ao longo do tempo, picos de umidade, e variações de temperatura.</p>
+          </div>
+
+          <div class="formula-box rounded-lg p-4">
+            <strong class="text-sky-400">Passo 4 — Volume do leito:</strong>
+            <div class="mono text-slate-300 mt-2">
+              ρ<sub>bulk</sub> (peneira molecular) ≈ 700 kg/m³
+            </div>
+            <div class="mono text-slate-300 mt-1">
+              V<sub>leito</sub> = m<sub>ads</sub> / ρ<sub>bulk</sub> = 22 / 700
+            </div>
+            <div class="mono text-white mt-1">
+              V<sub>leito</sub> = <strong>0,0314 m³ ≈ 31,4 litros por torre</strong>
+            </div>
+          </div>
+
+          <div class="formula-box rounded-lg p-4">
+            <strong class="text-sky-400">Passo 5 — Dimensões do vaso:</strong>
+            <div class="mono text-slate-300 mt-2">
+              D<sub>vaso</sub> = 0,25 m (10") — diâmetro interno
+            </div>
+            <div class="mono text-slate-300 mt-1">
+              A<sub>seção</sub> = π × 0,25² / 4 = 0,0491 m²
+            </div>
+            <div class="mono text-slate-300 mt-1">
+              H<sub>leito</sub> = V<sub>leito</sub> / A<sub>seção</sub> = 0,0314 / 0,0491
+            </div>
+            <div class="mono text-white mt-1">
+              H<sub>leito</sub> = <strong>0,64 m</strong>
+            </div>
+            <div class="mono text-slate-300 mt-2">
+              H<sub>vaso,total</sub> = H<sub>leito</sub> + distribuidores + espaço morto ≈ 0,64 + 0,36
+            </div>
+            <div class="mono text-white mt-1">
+              H<sub>vaso,total</sub> ≈ <strong>1,0 m</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="verify-box rounded-lg p-4 mt-4">
+          <div class="text-green-400 font-semibold text-sm mb-2">VERIFICAÇÃO — Velocidade superficial do gás</div>
+          <div class="text-sm text-slate-300">
+            <div class="mono">
+              Q<sub>real</sub> (a 10 bar) ≈ 183,6 / 10 = 18,4 m³/h = 5,1 × 10<sup>−3</sup> m³/s
+            </div>
+            <div class="mono mt-1">
+              v<sub>sup</sub> = Q<sub>real</sub> / A<sub>seção</sub> = 5,1×10<sup>−3</sup> / 0,0491 = <strong class="text-green-400">0,10 m/s</strong>
+            </div>
+            <p class="text-slate-400 mt-1">Faixa recomendada para PSA: 0,05–0,20 m/s. <strong class="text-green-400">✓ OK.</strong></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5.5 -->
+      <div id="sec5-5" class="mb-10">
+        <h3 class="text-xl font-semibold text-white mb-4">5.5 Perda de Carga no Dessecador</h3>
+        <div class="formula-box rounded-lg p-4">
+          <p class="text-slate-300 text-sm">
+            A perda de carga através do leito de peneira molecular depende da velocidade superficial, do tamanho dos pellets
+            e da altura do leito. Para leitos de 0,6 m de peneira 4Å com pellets de 3 mm:
+          </p>
+          <div class="mono text-white mt-2">
+            ΔP<sub>dessecador</sub> ≈ 20–50 kPa (0,2–0,5 bar)
+          </div>
+          <p class="text-slate-400 text-sm mt-2">
+            Com P<sub>operação</sub> = 10 bar = 1000 kPa, a perda de 20–50 kPa representa apenas 2–5% da pressão operacional.
+            <strong class="text-green-400">Aceitável.</strong>
+          </p>
+        </div>
+      </div>
+
+      <!-- 5.6 -->
+      <div id="sec5-6" class="mb-10">
+        <h3 class="text-xl font-semibold text-white mb-4">5.6 Quadro-Resumo — Dessecador S-101</h3>
+
+        <div class="bg-card rounded-xl border border-slate-600 p-6">
+          <div class="grid md:grid-cols-2 gap-6">
+            <div>
+              <h4 class="text-sm font-bold text-sky-400 mb-3">Especificações do Equipamento</h4>
+              <table class="text-sm w-full">
+                <tr><td class="text-slate-400 pr-4 py-1">Tag:</td><td class="text-white font-bold">S-101</td></tr>
+                <tr><td class="text-slate-400 pr-4 py-1">Serviço:</td><td class="text-white">Secagem de biometano</td></tr>
+                <tr><td class="text-slate-400 pr-4 py-1">Tecnologia:</td><td class="text-white">PSA — twin-tower</td></tr>
+                <tr><td class="text-slate-400 pr-4 py-1">Adsorvente:</td><td class="text-white">Peneira molecular 4Å</td></tr>
+                <tr><td class="text-slate-400 pr-4 py-1">Massa adsorvente:</td><td class="text-white">22 kg por torre (2 torres)</td></tr>
+                <tr><td class="text-slate-400 pr-4 py-1">Volume do leito:</td><td class="text-white">31,4 L por torre</td></tr>
+                <tr><td class="text-slate-400 pr-4 py-1">Diâmetro do vaso:</td><td class="text-white">DN 250 (10")</td></tr>
+                <tr><td class="text-slate-400 pr-4 py-1">Altura total do vaso:</td><td class="text-white">≈ 1,0 m</td></tr>
+                <tr><td class="text-slate-400 pr-4 py-1">Pressão de projeto:</td><td class="text-white">PN16 (16 bar)</td></tr>
+              </table>
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-sky-400 mb-3">Condições Operacionais</h4>
+              <table class="text-sm w-full">
+                <tr><td class="text-slate-400 pr-4 py-1">Vazão:</td><td class="text-white">183,6 Nm³/h (4406 Nm³/d)</td></tr>
+                <tr><td class="text-slate-400 pr-4 py-1">Pressão operação:</td><td class="text-white">10 bar</td></tr>
+                <tr><td class="text-slate-400 pr-4 py-1">Temperatura:</td><td class="text-white">≈ 20 °C</td></tr>
+                <tr><td class="text-slate-400 pr-4 py-1">Umidade entrada:</td><td class="text-red-400">≈ 2000 mg/Nm³</td></tr>
+                <tr><td class="text-slate-400 pr-4 py-1">Umidade saída:</td><td class="text-green-400">≤ 7 mg/Nm³</td></tr>
+                <tr><td class="text-slate-400 pr-4 py-1">Ponto de orvalho saída:</td><td class="text-green-400">≤ −45 °C</td></tr>
+                <tr><td class="text-slate-400 pr-4 py-1">Ciclo de adsorção:</td><td class="text-white">8 h</td></tr>
+                <tr><td class="text-slate-400 pr-4 py-1">ΔP:</td><td class="text-white">20–50 kPa</td></tr>
+                <tr><td class="text-slate-400 pr-4 py-1">Água removida:</td><td class="text-white">0,366 kg/h = 8,8 kg/d</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================== -->
+    <!-- SEÇÃO 6 — REFERÊNCIAS                                       -->
+    <!-- =========================================================== -->
+    <section id="sec6">
+      <h2 class="text-3xl font-bold text-sky-400 border-b border-slate-700 pb-3 mb-8">6. Referências Bibliográficas</h2>
+
+      <ol class="list-decimal list-inside space-y-3 text-sm text-slate-300 leading-relaxed">
+        <li>
+          <strong class="text-white">Perry, R. H.; Green, D. W.</strong> <em>Perry's Chemical Engineers' Handbook</em>, 9ª ed.
+          McGraw-Hill Education, 2019. Cap. 10: Transport and Storage of Fluids.
+        </li>
+        <li>
+          <strong class="text-white">Sinnott, R.; Towler, G.</strong> <em>Chemical Engineering Design: Principles, Practice and Economics of Plant and Process Design</em>, 6ª ed.
+          Butterworth-Heinemann, 2020. Cap. 5: Piping and Instrumentation; Cap. 6: Pumping.
+        </li>
+        <li>
+          <strong class="text-white">Coulson, J. M.; Richardson, J. F.</strong> <em>Chemical Engineering</em>, Vol. 1: Fluid Flow, Heat Transfer and Mass Transfer, 7ª ed.
+          Butterworth-Heinemann, 2019.
+        </li>
+        <li>
+          <strong class="text-white">Hydraulic Institute.</strong> <em>HI Standards</em>: ANSI/HI 9.6.1 — Rotodynamic Pumps for NPSH Margin, 2017.
+        </li>
+        <li>
+          <strong class="text-white">Karassik, I. J. et al.</strong> <em>Pump Handbook</em>, 4ª ed. McGraw-Hill, 2008.
+        </li>
+        <li>
+          <strong class="text-white">ANP — Agência Nacional do Petróleo, Gás Natural e Biocombustíveis.</strong>
+          <em>Resolução ANP nº 685, de 29 de junho de 2017.</em> Especificações do biometano oriundo de aterros sanitários e
+          de estações de tratamento de esgoto. Diário Oficial da União.
+        </li>
+        <li>
+          <strong class="text-white">Deublein, D.; Steinhauser, A.</strong> <em>Biogas from Waste and Renewable Resources</em>, 2ª ed.
+          Wiley-VCH, 2011. Cap. 8: Gas Purification and Upgrading.
+        </li>
+        <li>
+          <strong class="text-white">Ruthven, D. M.</strong> <em>Principles of Adsorption and Adsorption Processes</em>.
+          John Wiley &amp; Sons, 1984. Cap. 3: Molecular Sieves.
+        </li>
+        <li>
+          <strong class="text-white">Macintyre, A. J.</strong> <em>Bombas e Instalações de Bombeamento</em>, 2ª ed.
+          LTC — Livros Técnicos e Científicos Editora, 1997. (Referência nacional em português.)
+        </li>
+        <li>
+          <strong class="text-white">ABNT NBR 10131:2015.</strong> Bomba hidráulica de fluxo — Ensaios de desempenho e de cavitação.
+          Associação Brasileira de Normas Técnicas.
+        </li>
+      </ol>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="mt-16 border-t border-slate-700 pt-8 pb-12">
+      <div class="flex items-center justify-between flex-wrap gap-4 text-xs text-slate-500">
+        <div>
+          <div class="text-slate-400 font-semibold">ECOGAS — Planta de Biogás por Codigestão Anaeróbia</div>
+          <div>Memorial de Cálculo: Bombas &amp; Dessecador | Rev. 01 — Projeto Conceitual</div>
+          <div>Elaboração: G. Luz | Revisão: Equipe ECOGAS | Maio 2026</div>
+        </div>
+        <div class="text-right">
+          <div>Disciplina: Projetos Industriais II</div>
+          <div>Universidade — Engenharia Química</div>
+          <div class="mt-1 text-slate-600">Documento gerado para fins acadêmicos</div>
+        </div>
+      </div>
+    </footer>
+
+  </main>
+</div>
+
+</body>
+</html>
