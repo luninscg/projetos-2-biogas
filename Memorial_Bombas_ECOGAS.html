@@ -571,49 +571,49 @@ tailwind.config = {
             <tr>
               <td class="font-bold text-sky-400">P-101 A/B</td>
               <td>Lodo LA → TQ-01</td><td>Lodo ETE</td>
-              <td>1020</td><td>0,050</td><td>320</td><td>13,33</td><td>3,70×10<sup>−3</sup></td>
+              <td>1020</td><td>0,004</td><td>320</td><td>13,33</td><td>3,70×10<sup>−3</sup></td>
               <td>1,5</td><td>0</td><td>Centrífuga canal aberto</td>
             </tr>
             <tr>
               <td class="font-bold text-sky-400">P-102 A/B</td>
               <td>Lodo Imb → TQ-01</td><td>Lodo ETE</td>
-              <td>1015</td><td>0,050</td><td>80</td><td>3,33</td><td>9,26×10<sup>−4</sup></td>
+              <td>1015</td><td>0,004</td><td>80</td><td>3,33</td><td>9,26×10<sup>−4</sup></td>
               <td>1,5</td><td>0</td><td>Centrífuga canal aberto</td>
             </tr>
             <tr>
               <td class="font-bold text-sky-400">P-103</td>
               <td>Vinhaça → TQ-02</td><td>Vinhaça</td>
-              <td>1050</td><td>0,020</td><td>50</td><td>2,08</td><td>5,79×10<sup>−4</sup></td>
+              <td>1050</td><td>0,0025</td><td>50</td><td>2,08</td><td>5,79×10<sup>−4</sup></td>
               <td>1,2</td><td>0</td><td>Centrífuga standard</td>
             </tr>
             <tr>
               <td class="font-bold text-amber-400">P-104</td>
               <td>Resíduo → TQ-03</td><td>Resíduo org.</td>
-              <td>1080</td><td class="text-amber-400 font-bold">0,800</td><td>50</td><td>2,08</td><td>5,79×10<sup>−4</sup></td>
+              <td>1080</td><td class="text-amber-400 font-bold">0,080</td><td>50</td><td>2,08</td><td>5,79×10<sup>−4</sup></td>
               <td>1,2</td><td>0</td><td class="text-amber-400">Moineau (desloc. +)</td>
             </tr>
             <tr>
               <td class="font-bold text-sky-400">P-105 A/B</td>
               <td>Mist. → Biorreatores</td><td>Lama mista</td>
-              <td>1022</td><td>0,045</td><td>500</td><td>20,83</td><td>5,79×10<sup>−3</sup></td>
+              <td>1022</td><td>0,005</td><td>500</td><td>20,83</td><td>5,79×10<sup>−3</sup></td>
               <td>7,27</td><td>0</td><td>Centrífuga canal aberto</td>
             </tr>
             <tr>
               <td class="font-bold text-sky-400">P-106</td>
               <td>Água → C-101 topo</td><td>Água</td>
-              <td>998</td><td>0,001</td><td>1221,6</td><td>50,9</td><td>1,41×10<sup>−2</sup></td>
+              <td>998</td><td>0,001</td><td>1959,1</td><td>81,63</td><td>2,27×10<sup>−2</sup></td>
               <td>7,28</td><td class="text-red-400 font-bold">900</td><td class="text-sky-400">Centrífuga multi-estágio</td>
             </tr>
             <tr>
               <td class="font-bold text-sky-400">P-107</td>
               <td>Efluente C-101 → Flash</td><td>Água + CO₂</td>
-              <td>1002</td><td>0,001</td><td>1221,6</td><td>50,9</td><td>1,41×10<sup>−2</sup></td>
+              <td>1002</td><td>0,001</td><td>1959,1</td><td>81,63</td><td>2,27×10<sup>−2</sup></td>
               <td>−0,3</td><td>0</td><td>Centrífuga standard</td>
             </tr>
             <tr>
               <td class="font-bold text-amber-400">P-108</td>
               <td>Digestato → armazen.</td><td>Lama digerida</td>
-              <td>1015</td><td>0,030</td><td>425</td><td>17,71</td><td>4,92×10<sup>−3</sup></td>
+              <td>1015</td><td>0,006</td><td>425</td><td>17,71</td><td>4,92×10<sup>−3</sup></td>
               <td class="text-green-400 font-bold">−8,24</td><td>0</td><td>Parafuso (Moineau)</td>
             </tr>
           </tbody>
@@ -1000,12 +1000,13 @@ tailwind.config = {
               Verificando o número de Reynolds para este fluido em uma tubulação DN 50 (v ≈ 0,3 m/s):
             </p>
             <div class="mono text-slate-300 text-sm bg-slate-900/50 p-2 rounded">
-              Re = ρ × v × D / μ = 1080 × 0,3 × 0,050 / 0,800 = <strong class="text-red-400">20,3 → LAMINAR</strong>
+              Re = ρ × v × D / μ = 1080 × 0,3 × 0,050 / 0,080 = <strong class="text-red-400">203 → LAMINAR</strong>
             </div>
             <p class="text-slate-300 text-sm mt-2">
-              Bombas centrífugas dependem de <em>turbulência</em> para transferir energia ao fluido (pelo impelidor).
-              Com Re ≈ 20 (laminar), a centrífuga <strong class="text-red-400">não consegue operar eficientemente</strong> — a eficiência cai para 20–30%.
-              A solução é uma bomba de <strong class="text-amber-300">deslocamento positivo tipo Moineau (cavidade progressiva)</strong>.
+              Com μ = 80 cP (resíduo 15% ST diluído, Perry's 8ª ed. Tab.6-4) e velocidade típica em DN 50,
+              Re ≈ 200–580, firmemente no regime <strong class="text-red-400">LAMINAR</strong>.
+              A solução é uma bomba de <strong class="text-amber-300">deslocamento positivo tipo Moineau (cavidade progressiva)</strong>,
+              projetada para fluidos de alta viscosidade (API 676).
             </p>
           </div>
 
@@ -1014,7 +1015,7 @@ tailwind.config = {
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
               <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Fluido:</span> <span class="text-white">Resíduo orgânico</span></div>
               <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ρ =</span> <span class="text-white">1080 kg/m³</span></div>
-              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">μ =</span> <span class="text-amber-400 font-bold">0,800 Pa·s</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">μ =</span> <span class="text-amber-400 font-bold">0,080 Pa·s (80 cP)</span></div>
               <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Q =</span> <span class="text-white">50 m³/d = 2,08 m³/h</span></div>
               <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">H<sub>geo</sub> =</span> <span class="text-white">1,2 m</span></div>
               <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ΔP =</span> <span class="text-white">0 kPa</span></div>
@@ -1089,7 +1090,7 @@ tailwind.config = {
               <div><span class="text-slate-500">Material:</span> <span class="text-white">Aço inox 316L / estator EPDM</span></div>
               <div><span class="text-slate-500">Config.:</span> <span class="text-white">Simples</span></div>
               <div><span class="text-slate-500">Qtde total:</span> <span class="text-white">1 unidade</span></div>
-              <div><span class="text-slate-500">Re ≈</span> <span class="text-red-400">20 (laminar)</span></div>
+              <div><span class="text-slate-500">Re ≈</span> <span class="text-red-400">580 (laminar)</span></div>
             </div>
           </div>
         </div>
@@ -1243,7 +1244,7 @@ tailwind.config = {
               <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Fluido:</span> <span class="text-white">Água</span></div>
               <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ρ =</span> <span class="text-white">998 kg/m³</span></div>
               <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">μ =</span> <span class="text-white">0,001 Pa·s</span></div>
-              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Q =</span> <span class="text-white">1221,6 m³/d = 50,9 m³/h</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Q =</span> <span class="text-white">1959,1 m³/d = 81,63 m³/h (v4 HPWS)</span></div>
               <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">H<sub>geo</sub> =</span> <span class="text-white">7,28 m</span></div>
               <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ΔP =</span> <span class="text-red-400 font-bold">900 kPa</span></div>
               <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">η<sub>bomba</sub> =</span> <span class="text-white">0,70 (multi-estágio)</span></div>
@@ -1325,7 +1326,7 @@ tailwind.config = {
             <h4 class="text-sm font-bold text-white mb-2">Quadro-Resumo P-106</h4>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
               <div><span class="text-slate-500">Tipo:</span> <span class="text-sky-400">Centrífuga multi-estágio (4 estágios)</span></div>
-              <div><span class="text-slate-500">Q:</span> <span class="text-white">50,9 m³/h</span></div>
+              <div><span class="text-slate-500">Q:</span> <span class="text-white">81,63 m³/h (v4)</span></div>
               <div><span class="text-slate-500">H<sub>m</sub>:</span> <span class="text-white">119,1 m</span></div>
               <div><span class="text-slate-500">P<sub>inst</sub>:</span> <span class="text-white">30 kW (comercial)</span></div>
               <div><span class="text-slate-500">Material:</span> <span class="text-white">Aço inox 316</span></div>
@@ -1351,7 +1352,7 @@ tailwind.config = {
               <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Fluido:</span> <span class="text-white">Água + CO₂ dissolvido</span></div>
               <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ρ =</span> <span class="text-white">1002 kg/m³</span></div>
               <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">μ =</span> <span class="text-white">0,001 Pa·s</span></div>
-              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Q =</span> <span class="text-white">1221,6 m³/d = 50,9 m³/h</span></div>
+              <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">Q =</span> <span class="text-white">1959,1 m³/d = 81,63 m³/h (v4 HPWS)</span></div>
               <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">H<sub>geo</sub> =</span> <span class="text-white">−0,3 m (leve descida)</span></div>
               <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">ΔP =</span> <span class="text-white">0 kPa</span></div>
               <div class="bg-slate-800 rounded p-2"><span class="text-slate-500">η<sub>bomba</sub> =</span> <span class="text-white">0,75 (standard, água)</span></div>
@@ -1424,7 +1425,7 @@ tailwind.config = {
             <h4 class="text-sm font-bold text-white mb-2">Quadro-Resumo P-107</h4>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
               <div><span class="text-slate-500">Tipo:</span> <span class="text-white">Centrífuga standard</span></div>
-              <div><span class="text-slate-500">Q:</span> <span class="text-white">50,9 m³/h</span></div>
+              <div><span class="text-slate-500">Q:</span> <span class="text-white">81,63 m³/h (v4)</span></div>
               <div><span class="text-slate-500">H<sub>m</sub>:</span> <span class="text-white">3,0 m</span></div>
               <div><span class="text-slate-500">P<sub>inst</sub>:</span> <span class="text-white">1,1 kW (comercial)</span></div>
               <div><span class="text-slate-500">Material:</span> <span class="text-white">Aço inox 316L</span></div>
@@ -1587,7 +1588,7 @@ tailwind.config = {
               <td class="font-bold text-amber-400">P-104</td>
               <td>2,08</td><td>1,56</td><td>9,6</td><td>0,022</td>
               <td class="text-amber-400 font-bold">0,55</td>
-              <td class="text-amber-400">Moineau</td><td>316L/EPDM</td><td>Simples</td><td>μ=0,8 Pa·s (laminar)</td>
+              <td class="text-amber-400">Moineau</td><td>316L/EPDM</td><td>Simples</td><td>μ=80 cP (laminar, Re≈580)</td>
             </tr>
             <tr>
               <td class="font-bold text-sky-400">P-105 A/B</td>
@@ -1597,13 +1598,13 @@ tailwind.config = {
             </tr>
             <tr class="bg-red-900/20">
               <td class="font-bold text-red-400">P-106</td>
-              <td>50,9</td><td class="text-red-400">119,1</td><td>16 490</td><td>29,1</td>
+              <td>81,63</td><td class="text-red-400">119,1</td><td>48 059</td><td>48,1</td>
               <td class="text-red-400 font-bold">30,0</td>
               <td class="text-red-400">Multi-estágio (4 est.)</td><td>316</td><td>Simples+VFD</td><td>Maior consumo!</td>
             </tr>
             <tr>
               <td class="font-bold text-sky-400">P-107</td>
-              <td>50,9</td><td>3,0</td><td>417</td><td>0,69</td>
+              <td>81,63</td><td>2,0</td><td>787</td><td>0,79</td>
               <td class="text-amber-400 font-bold">1,10</td>
               <td>Centrífuga standard</td><td>316L</td><td>Simples</td><td>CO₂ dissolvido</td>
             </tr>

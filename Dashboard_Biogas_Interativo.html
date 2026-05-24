@@ -411,6 +411,98 @@ body{font-family:'Segoe UI',system-ui,sans-serif}
       </div>
     </div>
 
+    <!-- ═══ ABA BOMBAS ═══ -->
+    <div x-show="activeTab==='bombas'" x-cloak class="tab-content">
+      <h2 class="text-lg font-bold text-sky-400 mb-1">&#9875; Dimensionamento de Bombas &mdash; P-101 a P-108</h2>
+      <p class="text-xs text-gray-500 mb-1">Metodologia: Franzini &amp; Finnemore (1994) + Metcalf &amp; Eddy (2014). H<sub>m</sub> = H<sub>geo</sub> + &Delta;P/(&rho;g) + 20% perdas. Re = &rho;vD/&mu;. Viscosidades calibradas para %ST real de cada fluido.</p>
+      <p class="text-xs text-amber-500/80 mb-3 font-mono">P<sub>inst</sub> = &rho;&middot;g&middot;Q&middot;H<sub>m</sub> / (&eta;<sub>bomba</sub>&middot;&eta;<sub>motor</sub>) &times; FS &nbsp;&nbsp;|&nbsp;&nbsp; FS = 1.15 &nbsp;&nbsp;|&nbsp;&nbsp; &eta;<sub>motor</sub> = 0.93 (IE3)</p>
+
+      <!-- KPIs Bombas -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+        <div class="bg-gray-950 rounded-lg p-3 border border-sky-900/40"><div class="text-[10px] text-gray-500">Pot&ecirc;ncia Total Instalada</div><div class="text-xl font-bold text-sky-400" x-text="(m.bombas_total_kW||0).toFixed(1)+' kW'"></div></div>
+        <div class="bg-gray-950 rounded-lg p-3 border border-amber-900/40"><div class="text-[10px] text-gray-500">Bomba Dominante (P-106)</div><div class="text-xl font-bold text-amber-400" x-text="(m.bombas_P106_kW||0).toFixed(1)+' kW'"></div><div class="text-[10px] text-gray-600" x-text="(m.bombas_P106_pct||0).toFixed(0)+'% do total'"></div></div>
+        <div class="bg-gray-950 rounded-lg p-3 border border-emerald-900/40"><div class="text-[10px] text-gray-500">Regime Hidraulico</div><div class="text-xl font-bold text-emerald-400" x-text="(m.bombas_turb_count||0)+'/8 TURBULENTO'"></div></div>
+        <div class="bg-gray-950 rounded-lg p-3 border border-red-900/40"><div class="text-[10px] text-gray-500">Q Agua HPWS (v4)</div><div class="text-xl font-bold text-white" x-text="(m.bombas_Qagua||0).toFixed(1)+' m&sup3;/h'"></div><div class="text-[10px] text-gray-600">= 1959 m&sup3;/d (81.63 m&sup3;/h)</div></div>
+      </div>
+
+      <!-- Tabela detalhada -->
+      <div class="overflow-x-auto mb-4">
+        <table class="w-full text-xs">
+          <thead><tr class="bg-gray-800 text-gray-400">
+            <th class="px-1.5 py-1 text-left">Tag</th>
+            <th class="px-1.5 py-1 text-left">Servico</th>
+            <th class="px-1.5 py-1">Tipo</th>
+            <th class="px-1.5 py-1 text-right">Q m&sup3;/h</th>
+            <th class="px-1.5 py-1 text-right">H<sub>m</sub> m</th>
+            <th class="px-1.5 py-1 text-right">&mu; mPa&middot;s</th>
+            <th class="px-1.5 py-1 text-right">Re</th>
+            <th class="px-1.5 py-1">Regime</th>
+            <th class="px-1.5 py-1 text-right">P<sub>inst</sub> kW</th>
+            <th class="px-1.5 py-1 text-right">NPSHd m</th>
+            <th class="px-1.5 py-1">Material</th>
+          </tr></thead>
+          <tbody>
+            <template x-for="b in m.bombasRows||[]" :key="b.tag">
+              <tr class="border-b border-gray-800/50 hover:bg-gray-800/30">
+                <td class="px-1.5 py-1 font-mono text-sky-300 font-bold" x-text="b.tag"></td>
+                <td class="px-1.5 py-1 text-gray-300" x-text="b.descr"></td>
+                <td class="px-1.5 py-1 text-gray-400 text-[10px]" x-text="b.tipo"></td>
+                <td class="px-1.5 py-1 text-right font-mono text-white" x-text="b.Q_m3h"></td>
+                <td class="px-1.5 py-1 text-right font-mono text-amber-300" x-text="b.H_m_total"></td>
+                <td class="px-1.5 py-1 text-right font-mono text-gray-300" x-text="(b.mu_Pas*1000).toFixed(1)"></td>
+                <td class="px-1.5 py-1 text-right font-mono text-white" x-text="b.Re"></td>
+                <td class="px-1.5 py-1 text-center"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold" :class="b.regime==='TURBULENTO'?'bg-emerald-900/60 text-emerald-300':'bg-red-900/60 text-red-300'" x-text="b.regime"></span></td>
+                <td class="px-1.5 py-1 text-right font-mono font-bold" :class="b.P_inst_kW>10?'text-amber-400':'text-white'" x-text="b.P_inst_kW"></td>
+                <td class="px-1.5 py-1 text-right font-mono text-gray-400" x-text="b.NPSHd_m"></td>
+                <td class="px-1.5 py-1 text-[10px] text-gray-500" x-text="b.mat"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Notas Tecnicas -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="bg-gray-950 rounded-lg p-4 border border-gray-800">
+          <h3 class="text-sm font-bold text-amber-400 mb-2">Notas de Projeto</h3>
+          <ul class="text-xs text-gray-400 space-y-1 list-disc pl-4">
+            <li><strong class="text-white">P-106</strong> domina (&gt;95% da pot&ecirc;ncia) por conta do &Delta;P = 9 bar do scrubber HPWS.</li>
+            <li><strong class="text-white">P-104</strong> opera em regime LAMINAR (Re&lt;600) &mdash; fisicamente justificado: res&iacute;duo org&acirc;nico 15% ST, &mu;=80 cP. Bomba Moineau obrigat&oacute;ria.</li>
+            <li><strong class="text-white">P-108</strong> tem H<sub>geo</sub> negativo (-8.24 m): escoamento por gravidade poss&iacute;vel. Bomba instalada como reserva.</li>
+            <li><strong class="text-white">P-107</strong>: na pr&aacute;tica, press&atilde;o da coluna (10 bar) pode dispensar bomba &mdash; v&aacute;lvula redutora suficiente.</li>
+            <li>Viscosidades revisadas conforme <em>Metcalf &amp; Eddy (2014) Tab.14-13</em> e pipeline v4 (&mu;<sub>mix</sub>=5 mPa&middot;s).</li>
+            <li>Vazao P-106/P-107: <strong>81.63 m&sup3;/h</strong> = resultado direto do HPWS v4 (Q<sub>agua</sub> = 1959 m&sup3;/d).</li>
+          </ul>
+        </div>
+        <div class="bg-gray-950 rounded-lg p-4 border border-gray-800">
+          <h3 class="text-sm font-bold text-amber-400 mb-2">Refer&ecirc;ncias</h3>
+          <ul class="text-xs text-gray-400 space-y-1 list-disc pl-4">
+            <li>Franzini &amp; Finnemore (1994). <em>Fluid Mechanics</em>, 10&ordf; ed., Cap. 10.</li>
+            <li>Metcalf &amp; Eddy (2014). <em>Wastewater Engineering</em>, 5&ordf; ed., Tab.14-13, Tab.10-3.</li>
+            <li>Crane Co. (2011). <em>Flow of Fluids</em>, Tech. Paper 410.</li>
+            <li>Karassik et al. (2001). <em>Pump Handbook</em>, 3&ordf; ed.</li>
+            <li>NBR IEC 60034-30: Efici&ecirc;ncia motores IE3.</li>
+            <li>Perry's Chemical Engineers' Handbook, 8&ordf; ed., Tab.6-4.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Barra distribui&ccedil;&atilde;o potencia -->
+      <div class="mt-4 bg-gray-950 rounded-lg p-4 border border-gray-800">
+        <h3 class="text-sm font-bold text-sky-400 mb-2">Distribuicao de Potencia Instalada</h3>
+        <template x-for="b in m.bombasRows||[]" :key="'bar_'+b.tag">
+          <div class="flex items-center gap-2 mb-1 text-xs">
+            <span class="w-16 font-mono text-gray-400" x-text="b.tag"></span>
+            <div class="flex-1 bg-gray-800 rounded h-4 overflow-hidden">
+              <div class="h-full rounded" :style="'width:'+Math.max(b.P_inst_kW/(m.bombas_total_kW||1)*100,0.5)+'%; background:'+(b.regime==='TURBULENTO'?'#0ea5e9':'#f87171')" :title="b.P_inst_kW+' kW'"></div>
+            </div>
+            <span class="w-20 text-right font-mono text-white" x-text="b.P_inst_kW+' kW'"></span>
+            <span class="w-10 text-right font-mono text-gray-500" x-text="((b.P_inst_kW/(m.bombas_total_kW||1))*100).toFixed(0)+'%'"></span>
+          </div>
+        </template>
+      </div>
+    </div>
+
     <!-- SCRUBBER (SIMPLIFICADO) -->
     <div x-show="activeTab==='scrub'" x-cloak class="tab-content">
       <h2 class="text-lg font-bold text-emerald-400 mb-2">Water Scrubbing &mdash; Coluna de Absorcao (Simplificado)</h2>
@@ -995,6 +1087,18 @@ if(typeof ECOGAS!=='undefined' && ECOGAS.Trocadores){
     m.he102=ECOGAS.Trocadores.dim_HE102({m_gas:0.1669});
   }catch(e){m.he101={};m.he102={};}
 }else{m.he101={};m.he102={};}
+// Bombas dimensionamento (modulo v4 corrigido)
+if(typeof ECOGAS!=='undefined' && ECOGAS.Bombas){
+  try{
+    m.bombasRows=ECOGAS.Bombas.run_all();
+    m.bombas_total_kW=ECOGAS.Bombas.potencia_total();
+    var p106=m.bombasRows.find(function(b){return b.tag.indexOf('P-106')>=0;});
+    m.bombas_P106_kW=p106?p106.P_inst_kW:0;
+    m.bombas_P106_pct=m.bombas_total_kW>0?(p106.P_inst_kW/m.bombas_total_kW*100):0;
+    m.bombas_turb_count=m.bombasRows.filter(function(b){return b.regime==='TURBULENTO';}).length;
+    m.bombas_Qagua=p106?p106.Q_m3h:0;
+  }catch(e){m.bombasRows=[];m.bombas_total_kW=0;}
+}else{m.bombasRows=[];m.bombas_total_kW=0;}
 // Checks v4 sanity
 m.checksRig=m.sanity_v4?m.sanity_v4.checks.map(function(c){return{name:c.name,ok:c.ok};}):[];
 return m;}
@@ -1344,7 +1448,7 @@ function drawPFDSlides(svg,m,onClickEquip){
 
 function app(){return{
   activeTab:'pfd',lightMode:false,sidebarOpen:false,taxaDesconto:0.10,sensX:'TRH',sensY:'V_biogas',activeScenario:0,
-  tabs:[{id:'pfd',name:'PFD Interativo',icon:'\u{1F3ED}'},{id:'bm',name:'Bal. Massa',icon:'\u2696'},{id:'be',name:'Bal. Energia',icon:'\u{1F525}'},{id:'hyd',name:'Hidraulica',icon:'\u{1F4A7}'},{id:'scrub',name:'Scrubber (Simplificado)',icon:'\u{1F9EA}'},{id:'hpws',name:'HPWS Rigorosa',icon:'\u{1F9EA}'},{id:'trocadores',name:'Trocadores',icon:'\u{1F525}'},{id:'energy',name:'Energia B',icon:'\u26A1'},{id:'charts',name:'Graficos',icon:'\u{1F4CA}'},{id:'tables',name:'Tabelas',icon:'\u{1F4CB}'},{id:'refs',name:'Formulario',icon:'\u{1F4D0}'},{id:'optim',name:'Otimizacao',icon:'\u2699'},{id:'econ',name:'Economico',icon:'\u{1F4B0}'},{id:'guide',name:'Guia',icon:'\u{1F4D6}'}],
+  tabs:[{id:'pfd',name:'PFD Interativo',icon:'\u{1F3ED}'},{id:'bm',name:'Bal. Massa',icon:'\u2696'},{id:'be',name:'Bal. Energia',icon:'\u{1F525}'},{id:'hyd',name:'Hidraulica',icon:'\u{1F4A7}'},{id:'bombas',name:'Bombas',icon:'\u{2693}'},{id:'scrub',name:'Scrubber (Simplificado)',icon:'\u{1F9EA}'},{id:'hpws',name:'HPWS Rigorosa',icon:'\u{1F9EA}'},{id:'trocadores',name:'Trocadores',icon:'\u{1F525}'},{id:'energy',name:'Energia B',icon:'\u26A1'},{id:'charts',name:'Graficos',icon:'\u{1F4CA}'},{id:'tables',name:'Tabelas',icon:'\u{1F4CB}'},{id:'refs',name:'Formulario',icon:'\u{1F4D0}'},{id:'optim',name:'Otimizacao',icon:'\u2699'},{id:'econ',name:'Economico',icon:'\u{1F4B0}'},{id:'guide',name:'Guia',icon:'\u{1F4D6}'}],
   sensVars:[{key:'TRH',label:'TRH (dias)',min:10,max:40,step:1},{key:'eta_SV',label:'eta_SV (%)',min:30,max:80,step:1},{key:'Y_bg',label:'Y_bg (Nm3/kgSV)',min:0.3,max:1.0,step:0.05},{key:'x_residuo',label:'% Residuo',min:0.05,max:0.60,step:0.05},{key:'T_dig',label:'T dig (degC)',min:30,max:60,step:1},{key:'Q_tot',label:'Q tot (m3/d)',min:300,max:700,step:10}],
   m:{},p:defaultParams(),sliders:[],kpis:[],checks:[],checksOk:0,correntes:[],elemental:[],equipTable:[],selectedEquip:null,refTable:[],_plotlyDivs:{},
   scenarios:[{name:'A - Base',xL:0.50,xV:0.30,xR:0.20},{name:'B - +Lodo',xL:0.60,xV:0.20,xR:0.20},{name:'C - +Residuo',xL:0.40,xV:0.20,xR:0.40},{name:'D - +Vinhaca',xL:0.40,xV:0.40,xR:0.20},{name:'E - Max bg',xL:0.30,xV:0.30,xR:0.40}],scenarioResults:[],

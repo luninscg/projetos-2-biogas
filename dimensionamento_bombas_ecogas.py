@@ -60,7 +60,7 @@ BOMBAS = [
         "servico": "Lodo ETE Los Angeles → TQ-01",
         "fluido": "Lodo de ETE (2-5% ST)",
         "rho": 1020.0,       # kg/m³ — tubulacao_biogas.xlsx
-        "mu": 0.050,         # Pa·s — alta viscosidade, sólidos
+        "mu": 0.004,         # Pa·s (4 cP) — lodo 3.8% ST a 25°C [Metcalf & Eddy Tab.14-13]
         "Q_m3d": 320.0,      # m³/dia — Balanço de Massa
         "H_geo": 1.50,       # m — cota TQ-01 (5m) - cota chegada caminhão (~3.5m)
         "dP_Pa": 0.0,        # Pa — tanque aberto → tanque aberto
@@ -76,7 +76,7 @@ BOMBAS = [
         "servico": "Lodo ETE Imbirussu → TQ-01",
         "fluido": "Lodo de ETE (2-5% ST)",
         "rho": 1015.0,
-        "mu": 0.050,
+        "mu": 0.004,         # Pa·s (4 cP) — lodo 3.5% ST [Metcalf & Eddy Tab.14-13]
         "Q_m3d": 80.0,
         "H_geo": 1.50,
         "dP_Pa": 0.0,
@@ -92,7 +92,7 @@ BOMBAS = [
         "servico": "Vinhaça 2G → TQ-02",
         "fluido": "Vinhaça de 2ª geração (pH 3-5)",
         "rho": 1050.0,
-        "mu": 0.020,
+        "mu": 0.0025,        # Pa·s (2.5 cP) — vinhaça 2.5% ST [Wilkie et al., 2000]
         "Q_m3d": 50.0,
         "H_geo": 1.20,
         "dP_Pa": 0.0,
@@ -108,7 +108,7 @@ BOMBAS = [
         "servico": "Resíduo Orgânico → TQ-03",
         "fluido": "Resíduo orgânico diluído (10% ST)",
         "rho": 1080.0,
-        "mu": 0.800,         # Pa·s — MUITO VISCOSO! Re ≈ 30 (laminar)
+        "mu": 0.080,         # Pa·s (80 cP) — resíduo org. 15% ST diluído [Perry's 8ª ed. Tab.6-4]
         "Q_m3d": 50.0,
         "H_geo": 1.20,
         "dP_Pa": 0.0,
@@ -116,16 +116,16 @@ BOMBAS = [
         "tipo": "Bomba de cavidade progressiva (Moineau/parafuso)",
         "material": "Aço inox / Monel (resistência à abrasão)",
         "norma": "API 676 (deslocamento positivo)",
-        "obs": "⚠ VISCOSIDADE μ = 0.800 Pa·s → Re ≈ 20-30 (LAMINAR). "
-               "Bomba centrífuga NÃO é adequada. Usar Moineau (cavidade "
-               "progressiva) ou peristáltica. Ref: Perry's Cap.10; Metcalf & Eddy Tab.10-3.",
+        "obs": "Viscosidade elevada (80 cP a 15% ST) → regime TRANSIÇÃO/LAMINAR. "
+               "Bomba Moineau (cavidade progressiva) adequada para viscosidade. "
+               "Ref: Perry's Cap.10; Metcalf & Eddy Tab.10-3.",
     },
     {
         "tag": "P-105 A/B",
         "servico": "Misturador MX-01 → Biorreatores BIO-01..04",
         "fluido": "Substrato homogeneizado (lodo+vinhaça+resíduo)",
         "rho": 1021.7,       # kg/m³ — média ponderada
-        "mu": 0.045,         # Pa·s — mistura
+        "mu": 0.005,         # Pa·s (5 cP) — v4 pipeline: mu_mix = 5 mPa·s (6% ST, 25°C)
         "Q_m3d": 500.0,
         "H_geo": 7.27,       # m — cota biorreator (12.27m) - cota misturador (5.0m)
         "dP_Pa": 0.0,
@@ -142,7 +142,7 @@ BOMBAS = [
         "fluido": "Água industrial (lavagem, 20°C)",
         "rho": 998.0,
         "mu": 0.001003,      # Pa·s — água a 20°C
-        "Q_m3d": 50.9 * 24,  # m³/dia = 1221.6 (50.9 m³/h × 24h)
+        "Q_m3d": 81.63 * 24, # m³/dia = 1959.1 (81.63 m³/h × 24h) — v4 HPWS
         "H_geo": 7.28,       # m — cota topo C-101 (12.28m) - cota reservatório (5.0m)
         "dP_Pa": 900_000.0,  # Pa = 9 bar — água precisa chegar a 10 bar na coluna!
         "eta_bomba": ETA_BOMBA_MULTIESTAG,
@@ -151,7 +151,7 @@ BOMBAS = [
         "norma": "API 610 / ISO 5199",
         "obs": "⚠ BOMBA MAIS POTENTE DO PROJETO (~85% do consumo total). "
                "ΔP = 900 kPa (9 bar) → H_pressão ≈ 92 m! Necessita multi-estágio. "
-               "Vazão = 50.9 m³/h (resultado direto do HPWS: Q_água = 50.92 m³/h). "
+               "Vazão = 81.63 m³/h (resultado v4 HPWS: Q_água = 1959 m³/d). "
                "Fabricantes: Grundfos CRN, KSB Multitec, Sulzer MSD.",
     },
     {
@@ -160,7 +160,7 @@ BOMBAS = [
         "fluido": "Água rica em CO₂ dissolvido (pH ~5)",
         "rho": 1002.0,
         "mu": 0.001010,
-        "Q_m3d": 50.9 * 24,  # mesma vazão de água
+        "Q_m3d": 81.63 * 24, # mesma vazão da P-106 (v4: 1959 m³/d)
         "H_geo": -0.30,      # m — flash está ligeiramente abaixo (despressurização)
         "dP_Pa": 0.0,        # A coluna está a 10 bar, flash a ~3 bar → válvula regula
         "eta_bomba": ETA_BOMBA_AGUA,
@@ -176,7 +176,7 @@ BOMBAS = [
         "servico": "Digestato Biorreatores → Armazenamento/Terceirização",
         "fluido": "Digestato (lama digerida, SV residual)",
         "rho": 1015.0,
-        "mu": 0.030,         # Pa·s
+        "mu": 0.006,         # Pa·s (6 cP) — digestato 2-3% ST [Chernicharo Tab.3-5]
         "Q_m3d": 425.0,      # m³/dia — 85% da alimentação retorna como digestato
         "H_geo": -8.24,      # m — NEGATIVO! Digestato desce (cota 12.27 → cota ~4.0)
         "dP_Pa": 0.0,
