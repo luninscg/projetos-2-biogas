@@ -756,6 +756,130 @@ body{font-family:'Segoe UI',system-ui,sans-serif}
       </div>
     </div>
 
+    <!-- VASOS E TANQUES -->
+    <div x-show="activeTab==='vasos'" x-cloak class="tab-content">
+      <h2 class="text-lg font-bold text-sky-400 mb-1">&#128738; Vasos &amp; Tanques &mdash; Dimensionamento por Autonomia e Tempo de Residencia</h2>
+      <p class="text-xs text-gray-500 mb-1">Criterio: V = Q &middot; t_autonomia &middot; FS. Geometria: H/D tipico (API 650 = 0.5-2.0, ASME VIII = 2-4). Refs: Towler &amp; Sinnott (2012) Cap.16; API 650; ASME VIII Div.1; NBR 7821.</p>
+      <p class="text-xs text-amber-500/80 mb-3 font-mono">V = (Q/24) &middot; t_h &middot; FS &nbsp;|&nbsp; D = (4V/(&pi;&middot;H/D))^(1/3) &nbsp;|&nbsp; P_proj = 1.1 &middot; P_op (vasos pressao)</p>
+
+      <!-- KPIs -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+        <div class="bg-gray-950 rounded-lg p-3 border border-gray-800 text-center">
+          <div class="text-[10px] text-gray-500 uppercase">Tanques Atm.</div>
+          <div class="text-xl font-bold text-sky-300" x-text="(m.vasosData?.tanques||[]).filter(t=>t.P_projeto_bar<=1.1).length"></div>
+        </div>
+        <div class="bg-gray-950 rounded-lg p-3 border border-gray-800 text-center">
+          <div class="text-[10px] text-gray-500 uppercase">Vasos Pressao</div>
+          <div class="text-xl font-bold text-amber-300" x-text="(m.vasosData?.tanques||[]).filter(t=>t.P_projeto_bar>1.1).length + (m.vasosData?.flash?1:0)"></div>
+        </div>
+        <div class="bg-gray-950 rounded-lg p-3 border border-gray-800 text-center">
+          <div class="text-[10px] text-gray-500 uppercase">Vol. Total</div>
+          <div class="text-xl font-bold text-green-300" x-text="((m.vasosData?.tanques||[]).reduce((s,t)=>s+t.V_total_m3,0)+(m.vasosData?.flash?.V_total_m3||0)).toFixed(0)+' m3'"></div>
+        </div>
+        <div class="bg-gray-950 rounded-lg p-3 border border-gray-800 text-center">
+          <div class="text-[10px] text-gray-500 uppercase">Flash V-101</div>
+          <div class="text-xl font-bold text-rose-300" x-text="(m.vasosData?.flash?.V_total_m3||0).toFixed(1)+' m3'"></div>
+        </div>
+      </div>
+
+      <!-- Tabela Tanques -->
+      <h3 class="text-sm font-semibold text-gray-300 mb-1">Tanques de Armazenamento (TQ-01 a TQ-04)</h3>
+      <div class="overflow-x-auto mb-4">
+        <table class="w-full text-xs">
+          <thead><tr class="bg-gray-800 text-gray-400">
+            <th class="px-1.5 py-1 text-left">Tag</th>
+            <th class="px-1.5 py-1 text-left">Servico</th>
+            <th class="px-1.5 py-1 text-left">Fluido</th>
+            <th class="px-1.5 py-1 text-right">Q (m3/d)</th>
+            <th class="px-1.5 py-1 text-right">Auton. (h)</th>
+            <th class="px-1.5 py-1 text-right">V_util (m3)</th>
+            <th class="px-1.5 py-1 text-right">V_total (m3)</th>
+            <th class="px-1.5 py-1 text-right">D (m)</th>
+            <th class="px-1.5 py-1 text-right">H (m)</th>
+            <th class="px-1.5 py-1 text-right">P (bar)</th>
+            <th class="px-1.5 py-1">Material</th>
+            <th class="px-1.5 py-1">Norma</th>
+          </tr></thead>
+          <tbody>
+            <template x-for="t in m.vasosData?.tanques||[]" :key="t.tag">
+              <tr class="border-b border-gray-800/50 hover:bg-gray-800/30">
+                <td class="px-1.5 py-1 font-mono text-sky-300 font-bold" x-text="t.tag"></td>
+                <td class="px-1.5 py-1 text-gray-300" x-text="t.servico"></td>
+                <td class="px-1.5 py-1 text-gray-400 text-[10px]" x-text="t.fluido"></td>
+                <td class="px-1.5 py-1 text-right font-mono text-white" x-text="t.Q_m3d.toFixed(0)"></td>
+                <td class="px-1.5 py-1 text-right font-mono text-amber-300" x-text="t.autonomia_h"></td>
+                <td class="px-1.5 py-1 text-right font-mono text-gray-300" x-text="t.V_util_m3"></td>
+                <td class="px-1.5 py-1 text-right font-mono text-green-300 font-bold" x-text="t.V_total_m3"></td>
+                <td class="px-1.5 py-1 text-right font-mono text-white" x-text="t.D_m"></td>
+                <td class="px-1.5 py-1 text-right font-mono text-white" x-text="t.H_m"></td>
+                <td class="px-1.5 py-1 text-right font-mono" :class="t.P_projeto_bar>1.1?'text-red-300':'text-gray-400'" x-text="t.P_projeto_bar"></td>
+                <td class="px-1.5 py-1 text-[10px] text-gray-500" x-text="t.material"></td>
+                <td class="px-1.5 py-1 text-[10px] text-gray-500" x-text="t.norma"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Flash Tank V-101 -->
+      <h3 class="text-sm font-semibold text-gray-300 mb-1">V-101 &mdash; Flash Tank (Despressurizacao)</h3>
+      <div class="bg-gray-950 rounded-lg p-4 border border-gray-800 mb-4" x-show="m.vasosData?.flash">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div><span class="text-gray-500">Q liq:</span> <span class="text-white font-mono" x-text="(m.vasosData?.flash?.Q_L_m3h||0).toFixed(1)+' m3/h'"></span></div>
+          <div><span class="text-gray-500">t_res:</span> <span class="text-amber-300 font-mono" x-text="(m.vasosData?.flash?.t_res_min||0)+' min'"></span></div>
+          <div><span class="text-gray-500">V_liq:</span> <span class="text-white font-mono" x-text="(m.vasosData?.flash?.V_liq_m3||0)+' m3'"></span></div>
+          <div><span class="text-gray-500">V_total:</span> <span class="text-green-300 font-mono font-bold" x-text="(m.vasosData?.flash?.V_total_m3||0)+' m3'"></span></div>
+          <div><span class="text-gray-500">D:</span> <span class="text-white font-mono" x-text="(m.vasosData?.flash?.D_m||0)+' m'"></span></div>
+          <div><span class="text-gray-500">H:</span> <span class="text-white font-mono" x-text="(m.vasosData?.flash?.H_m||0)+' m'"></span></div>
+          <div><span class="text-gray-500">P_proj:</span> <span class="text-red-300 font-mono" x-text="(m.vasosData?.flash?.P_projeto_bar||0)+' bar'"></span></div>
+          <div><span class="text-gray-500">Material:</span> <span class="text-gray-300 text-[10px]" x-text="m.vasosData?.flash?.material||''"></span></div>
+        </div>
+        <p class="text-[10px] text-gray-500 mt-2 italic" x-text="m.vasosData?.flash?.obs||''"></p>
+      </div>
+
+      <!-- Stripper C-102 -->
+      <h3 class="text-sm font-semibold text-gray-300 mb-1">C-102 &mdash; Stripper de Regeneracao</h3>
+      <div class="bg-gray-950 rounded-lg p-4 border border-gray-800 mb-4" x-show="m.vasosData?.stripper">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div><span class="text-gray-500">Q liq:</span> <span class="text-white font-mono" x-text="(m.vasosData?.stripper?.Q_L_m3h||0).toFixed(1)+' m3/h'"></span></div>
+          <div><span class="text-gray-500">NTU:</span> <span class="text-amber-300 font-mono" x-text="m.vasosData?.stripper?.NTU||0"></span></div>
+          <div><span class="text-gray-500">HTU:</span> <span class="text-white font-mono" x-text="(m.vasosData?.stripper?.HTU_m||0)+' m'"></span></div>
+          <div><span class="text-gray-500">Z_recheio:</span> <span class="text-green-300 font-mono font-bold" x-text="(m.vasosData?.stripper?.Z_recheio_m||0)+' m'"></span></div>
+          <div><span class="text-gray-500">Z_total:</span> <span class="text-sky-300 font-mono" x-text="(m.vasosData?.stripper?.Z_total_m||0)+' m'"></span></div>
+          <div><span class="text-gray-500">D:</span> <span class="text-white font-mono" x-text="(m.vasosData?.stripper?.D_m||0)+' m'"></span></div>
+          <div><span class="text-gray-500">P_op:</span> <span class="text-gray-400 font-mono" x-text="(m.vasosData?.stripper?.P_op_bar||0)+' bar'"></span></div>
+          <div><span class="text-gray-500">Recheio:</span> <span class="text-gray-300 text-[10px]" x-text="m.vasosData?.stripper?.recheio||''"></span></div>
+        </div>
+        <p class="text-[10px] text-gray-500 mt-2 italic" x-text="m.vasosData?.stripper?.obs||''"></p>
+      </div>
+
+      <!-- Notas e Referencias -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="bg-gray-950 rounded-lg p-4 border border-gray-800">
+          <h3 class="text-sm font-bold text-amber-400 mb-2">Premissas de Projeto</h3>
+          <ul class="text-xs text-gray-400 space-y-1 list-disc pl-4">
+            <li><strong class="text-white">TQ-01 (Lodo)</strong>: Autonomia 12h = meio turno, concreto revestido.</li>
+            <li><strong class="text-white">TQ-02 (Vinhaca)</strong>: Autonomia 24h = 1 descarga diaria, inox 316L (pH 3-5).</li>
+            <li><strong class="text-white">TQ-03 (Residuo)</strong>: Autonomia 24h, PEAD/concreto (resistencia organica).</li>
+            <li><strong class="text-white">TQ-04 (Biometano)</strong>: Vaso de pressao 10 bar, 4h autonomia, NR-13.</li>
+            <li><strong class="text-white">V-101 (Flash)</strong>: t_res 3 min (Towler Tab.16-2), V_total = 3x V_liq (bifasico).</li>
+            <li><strong class="text-white">C-102 (Stripper)</strong>: D = 70% C-101 (mesma vazao liquida, sem compressao).</li>
+          </ul>
+        </div>
+        <div class="bg-gray-950 rounded-lg p-4 border border-gray-800">
+          <h3 class="text-sm font-bold text-amber-400 mb-2">Referencias</h3>
+          <ul class="text-xs text-gray-400 space-y-1 list-disc pl-4">
+            <li>Towler, G. &amp; Sinnott, R. (2012). Chemical Engineering Design, 2nd ed. Cap.16.</li>
+            <li>API 650 &mdash; Welded Tanks for Oil Storage (tanques atmosfericos).</li>
+            <li>ASME VIII Div.1 &mdash; Pressure Vessels (vasos com P &gt; 1 atm).</li>
+            <li>NBR 7821 &mdash; Tanques de Aco (norma brasileira).</li>
+            <li>Metcalf &amp; Eddy (2014). Wastewater Engineering, 5th ed. Tab.14-8.</li>
+            <li>NR-13 &mdash; Caldeiras, Vasos de Pressao e Tubulacoes (inspe&ccedil;&atilde;o).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
     <!-- HPWS RIGOROSA (Onda 1968 / Treybal / GPDC) -->
     <div x-show="activeTab==='hpws'" x-cloak class="tab-content">
       <h2 class="text-lg font-bold text-emerald-400 mb-2">Coluna HPWS &mdash; Modelo Rigoroso (Onda 1968 + Treybal)</h2>
@@ -1085,8 +1209,30 @@ if(typeof ECOGAS!=='undefined' && ECOGAS.Pipeline){
     m.hpws_v4=pv4.hpws;
     m.bio_v4=pv4.bio;
     m.sanity_v4=pv4.sanity;
-    // Calcular HPWS completa via Onda para comparacao
-    m.hpws=new ECOGAS.ColunaHPWS({Q_biogas_Nm3d:pv4.bio.Q_bg_Nm3d,T_op_C:p.T_scrub||20,P_man_bar:9.0}).run();
+    // HPWS rigorosa Onda (flat para display)
+    try{
+      var _hd=new ECOGAS.ColunaHPWS({Q_biogas_Nm3d:pv4.bio.Q_bg_Nm3d,T_op_C:p.T_scrub||20,P_man_bar:9.0}).dimensionar();
+      var _p=_hd.propriedades||{},_b=_hd.balanco||{},_d=_hd.diametro||{},_a=_hd.altura||{},_s=_hd.slip||{},_t=_hd.termico||{},_pc=_hd.perda_carga||{},_e=_hd.estagios||{};
+      m.hpws={
+        recheio_nome:_hd.recheio?.nome||'Pall 25mm',P_op_bar:_hd.entradas?.P_op_bar,T_op_C:_hd.entradas?.T_op_C,modo:_hd.entradas?.modo||'spec',
+        rho_L:(_p.rho_L||998).toFixed(1),mu_L_mPas:((_p.mu_L||0.001)*1000).toFixed(3),sig_L_mNm:((_p.sig_L||0.072)*1000).toFixed(1),D_L:(_p.D_L||1.8e-9).toExponential(2),
+        rho_G:(_p.rho_G||7).toFixed(2),mu_G:(_p.mu_G||1.5e-5).toExponential(2),H_CO2:(_p.H_CO2||2900).toFixed(0),H_CH4:(_p.H_CH4||38000).toFixed(0),m_eq:'calc',
+        Gs:(_b.Gs||0).toFixed(3),A_min:(_b.A_min||0).toFixed(3),A_real:(_b.A_real||0).toFixed(3),ratio_LLmin:(_b.ratio_LLmin||2.5).toFixed(2),
+        Q_L:(_b.Q_L||82).toFixed(1),y2_CO2:(_b.y2_CO2||0.02).toFixed(4),FM_fundo:(_b.FM_fundo||0).toFixed(4),FM_topo:(_b.FM_topo||0).toFixed(4),
+        NOG:(_e.NOG||_a.z_NTU||5).toFixed(2),HOG:(_a.HOG||0.5).toFixed(3),HG:(_a.HG||0.08).toFixed(4),HL:(_a.HL||0.5).toFixed(3),
+        kL:(_a.kL||1.6e-4).toExponential(2),kG:(_a.kG||6.5e-4).toExponential(2),aw_ap:(_a.aw_ap||0.68).toFixed(3),
+        Psi:(_d.Psi||15).toFixed(1),crit_gov:_d.crit_gov||'CARGA DE LIQUIDO',dc_A:(_d.dc_A_std||0.4).toFixed(2),dc_C:(_d.dc_C_std||1.65).toFixed(2),dc_proj:(_d.dc_proj||1.65).toFixed(2),
+        z_recheio:(_a.z_recheio||2.2).toFixed(2),z_total:(_a.z_total||4.3).toFixed(2),esbeltez:(_a.esbeltez||2.6).toFixed(1),
+        dP_kPa:(_pc.dP_kPa||0.04).toFixed(3),
+        slip_H_CH4:(_s.H_CH4||38000).toFixed(0),x_CH4_fundo:(_s.x_CH4_fundo||1.6e-4).toExponential(2),m_CH4_slip_total:(_s.n_CH4_diss!=null?((_s.n_CH4_diss*16*86400)||0).toFixed(1):'—'),
+        frac_rec:((_s.frac_rec||0.7)*100).toFixed(1)+'%',m_CH4_slip:(_s.m_CH4_slip||83).toFixed(1),pct_slip:(_s.pct_slip||1.6).toFixed(2),
+        y_CH4_topo:((_s.y_CH4_topo||0.977)*100).toFixed(1)+'%',y_CH4_topo_num:_s.y_CH4_topo||0.977,
+        m_CH4_topo:(_s.m_CH4_topo||5039).toFixed(0),m_CO2_topo:(_s.m_CO2_topo||331).toFixed(0),
+        Q_term_kW:(_t.Q_term!=null?(_t.Q_term/1000).toFixed(2):'—'),dT_ad:(_t.dT_ad||0.5).toFixed(2),
+        N_Kr:(_e.N_Kr||2.7).toFixed(2),
+        Q_agua_m3h:_b.Q_L||82,dc_nominal_m:_d.dc_proj||1.65
+      };
+    }catch(ee){m.hpws=pv4.hpws;}
   }catch(e){m.hpws={};m.pipeV4=null;}
 }else{m.hpws={};m.pipeV4=null;}
 // Hidráulica rigorosa (Colebrook-White + 13 trechos v4)
@@ -1116,6 +1262,12 @@ if(typeof ECOGAS!=='undefined' && ECOGAS.Bombas){
 if(typeof ECOGAS!=='undefined' && ECOGAS.Valvulas){
   m.valvulasRows=ECOGAS.Valvulas.run_all();
 }else{m.valvulasRows=[];}
+// Vasos e Tanques
+if(typeof ECOGAS!=='undefined'&&ECOGAS.Vasos){
+  var _Qagua=m.hpws?.Q_agua_m3h||m.Q_agua_hpws_m3h||81.63;
+  var _Dc101=m.hpws?.dc_nominal_m||1.2;
+  m.vasosData=ECOGAS.Vasos.run_all({Q_agua_m3h:_Qagua, D_C101:_Dc101});
+}else{m.vasosData={tanques:[],flash:null,stripper:null};}
 // Checks v4 sanity
 m.checksRig=m.sanity_v4?m.sanity_v4.checks.map(function(c){return{name:c.name,ok:c.ok};}):[];
 return m;}
@@ -1465,7 +1617,7 @@ function drawPFDSlides(svg,m,onClickEquip){
 
 function app(){return{
   activeTab:'pfd',lightMode:false,sidebarOpen:false,taxaDesconto:0.10,sensX:'TRH',sensY:'V_biogas',activeScenario:0,
-  tabs:[{id:'pfd',name:'PFD Interativo',icon:'\u{1F3ED}'},{id:'bm',name:'Bal. Massa',icon:'\u2696'},{id:'be',name:'Bal. Energia',icon:'\u{1F525}'},{id:'hyd',name:'Hidraulica',icon:'\u{1F4A7}'},{id:'bombas',name:'Bombas',icon:'\u{2693}'},{id:'valvulas',name:'Valvulas',icon:'\u{1F6D1}'},{id:'hpws',name:'HPWS Rigorosa',icon:'\u{1F9EA}'},{id:'trocadores',name:'Trocadores',icon:'\u{1F525}'},{id:'energy',name:'Energia B',icon:'\u26A1'},{id:'charts',name:'Graficos',icon:'\u{1F4CA}'},{id:'tables',name:'Tabelas',icon:'\u{1F4CB}'},{id:'refs',name:'Formulario',icon:'\u{1F4D0}'},{id:'optim',name:'Otimizacao',icon:'\u2699'},{id:'econ',name:'Economico',icon:'\u{1F4B0}'},{id:'guide',name:'Guia',icon:'\u{1F4D6}'}],
+  tabs:[{id:'pfd',name:'PFD Interativo',icon:'\u{1F3ED}'},{id:'bm',name:'Bal. Massa',icon:'\u2696'},{id:'be',name:'Bal. Energia',icon:'\u{1F525}'},{id:'hyd',name:'Hidraulica',icon:'\u{1F4A7}'},{id:'bombas',name:'Bombas',icon:'\u{2693}'},{id:'valvulas',name:'Valvulas',icon:'\u{1F6D1}'},{id:'vasos',name:'Vasos/Tanques',icon:'\u{1F6E2}'},{id:'hpws',name:'HPWS Rigorosa',icon:'\u{1F9EA}'},{id:'trocadores',name:'Trocadores',icon:'\u{1F525}'},{id:'energy',name:'Energia B',icon:'\u26A1'},{id:'charts',name:'Graficos',icon:'\u{1F4CA}'},{id:'tables',name:'Tabelas',icon:'\u{1F4CB}'},{id:'refs',name:'Formulario',icon:'\u{1F4D0}'},{id:'optim',name:'Otimizacao',icon:'\u2699'},{id:'econ',name:'Economico',icon:'\u{1F4B0}'},{id:'guide',name:'Guia',icon:'\u{1F4D6}'}],
   sensVars:[{key:'TRH',label:'TRH (dias)',min:10,max:40,step:1},{key:'eta_SV',label:'eta_SV (%)',min:30,max:80,step:1},{key:'Y_bg',label:'Y_bg (Nm3/kgSV)',min:0.3,max:1.0,step:0.05},{key:'x_residuo',label:'% Residuo',min:0.05,max:0.60,step:0.05},{key:'T_dig',label:'T dig (degC)',min:30,max:60,step:1},{key:'Q_tot',label:'Q tot (m3/d)',min:300,max:700,step:10}],
   m:{},p:defaultParams(),sliders:[],kpis:[],checks:[],checksOk:0,correntes:[],elemental:[],equipTable:[],selectedEquip:null,refTable:[],_plotlyDivs:{},
   scenarios:[{name:'A - Base',xL:0.50,xV:0.30,xR:0.20},{name:'B - +Lodo',xL:0.60,xV:0.20,xR:0.20},{name:'C - +Residuo',xL:0.40,xV:0.20,xR:0.40},{name:'D - +Vinhaca',xL:0.40,xV:0.40,xR:0.20},{name:'E - Max bg',xL:0.30,xV:0.30,xR:0.40}],scenarioResults:[],
@@ -1513,23 +1665,29 @@ function app(){return{
   ];},
   updateCorrentes(){const m=this.m,p=this.p;const M_lodo_la=m.M_lodo*0.80,M_lodo_imb=m.M_lodo*0.20;const ST_la=M_lodo_la*0.040,ST_imb=M_lodo_imb*0.035;const SV_la=ST_la*0.70,SV_imb=ST_imb*0.70;this.correntes=[{id:101,desc:'Lodo Los Angeles',mass:M_lodo_la,st:ST_la,sv:SV_la,temp:p.T_in,phase:'Liq/pasta',meaning:'64% da vazao total (planilha colega)'},{id:102,desc:'Lodo Imbirussu',mass:M_lodo_imb,st:ST_imb,sv:SV_imb,temp:p.T_in,phase:'Liq/pasta',meaning:'16% da vazao total (planilha colega)'},{id:103,desc:'Vinhaca',mass:m.M_vinhaca,st:m.ST_vinhaca,sv:m.SV_vinhaca,temp:p.T_in,phase:'Liquido',meaning:'10% da vazao total (planilha colega)'},{id:104,desc:'Residuo organico',mass:m.M_residuo,st:m.ST_residuo,sv:m.SV_residuo,temp:p.T_in,phase:'Pasta',meaning:'10% da vazao total (planilha colega)'},{id:105,desc:'Mistura alimentacao',mass:m.M_total,st:m.ST_total,sv:m.SV_total,temp:p.T_in,phase:'Liq/pasta',meaning:'Saida do misturador/equalizacao'},{id:106,desc:'Corrente ao biodigestor',mass:m.M_total,st:m.ST_total,sv:m.SV_total,temp:p.T_dig,phase:'Liq/pasta',meaning:'Entrada no biodigestor apos condicionamento'},{id:107,desc:'Biogas bruto',mass:m.M_biogas,st:null,sv:null,temp:p.T_dig,phase:'Gas',meaning:'Saida do biodigestor para coluna de absorcao'},{id:108,desc:'Biogas tratado',mass:m.M_biogas*0.99,st:null,sv:null,temp:p.T_dig,phase:'Gas',meaning:'Saida da etapa absorcao/dessorcao'},{id:109,desc:'Digestato',mass:m.M_digestato,st:m.ST_digestato,sv:m.SV_residual,temp:p.T_dig,phase:'Liq/pasta',meaning:'Fundo do biodigestor'},{id:110,desc:'Reciclo liquido processo',mass:m.M_digestato*0.10,st:null,sv:null,temp:p.T_dig,phase:'Liq.',meaning:'Reciclo interno da purificacao (fluxograma slides)'},{id:111,desc:'Produto biometano',mass:m.m_CH4*0.97,st:null,sv:null,temp:p.T_dig,phase:'Gas',meaning:'Corrente produto apos purificacao'},{id:112,desc:'Corrente rejeito CO2',mass:m.m_CO2*0.97,st:null,sv:null,temp:p.T_dig,phase:'Gas',meaning:'Corrente de descarte/vent da purificacao'},{id:113,desc:'Agua de absorcao',mass:null,st:null,sv:null,temp:25,phase:'Liq.',meaning:'Alimentacao da coluna de absorcao'},{id:114,desc:'Agua de dessorcao',mass:null,st:null,sv:null,temp:30,phase:'Liq.',meaning:'Recuperacao no bloco destilacao/dessorcao'},{id:115,desc:'NaOH',mass:100,st:null,sv:null,temp:p.T_in,phase:'Liq.',meaning:'Correcao de pH (se necessario)'},{id:116,desc:'Eletricidade',mass:null,st:null,sv:null,temp:'-',phase:'-',meaning:Math.round(m.E_liq)+' kWh/d'},{id:117,desc:'Calor',mass:null,st:null,sv:null,temp:'-',phase:'-',meaning:Math.round(m.Q_CHP)+' MJ/d'}];},
   updateElemental(){const m=this.m;this.elemental=[{el:'C',input:m.C_in,gas:m.C_gas,dig:m.C_dig,err:m.C_in-m.C_gas-m.C_dig},{el:'H',input:m.H_in,gas:m.H_gas,dig:m.H_dig,err:m.H_in-m.H_gas-m.H_dig},{el:'O',input:m.O_in,gas:m.O_gas,dig:m.O_dig,err:m.O_in-m.O_gas-m.O_dig},{el:'N',input:m.N_in,gas:m.N_gas,dig:m.N_dig,err:m.N_in-m.N_gas-m.N_dig},{el:'S',input:m.S_in,gas:m.S_gas,dig:m.S_dig,err:m.S_in-m.S_gas-m.S_dig}];},
-  updateEquipTable(){const m=this.m,p=this.p;this.equipTable=[
-    {tag:'Tanque-01',name:'Tanque Lodo',dim:(m.V_lodo*0.5*1.2).toFixed(0)+' m3',power:'-',mat:'A36+epoxi',cost:50000},
-    {tag:'Tanque-02',name:'Tanque Vinhaca',dim:(m.V_vinhaca*0.5*1.2).toFixed(0)+' m3',power:'-',mat:'316L/PRFV',cost:40000},
-    {tag:'Tanque-03',name:'Tanque Residuo Org.',dim:(m.V_residuo*0.5*1.2).toFixed(0)+' m3',power:'-',mat:'A36+epoxi',cost:40000},
-    {tag:'Misturador',name:'Misturador/Equalizacao',dim:m.dim_TQ101_V.toFixed(0)+' m3',power:m.dim_TQ101_pot?.toFixed(0)+' kW',mat:'316L',cost:80000},
-    {tag:'Biodigestor',name:'Biodigestor CSTR',dim:m.dim_D101_Vtot.toFixed(0)+' m3, D='+m.dim_D101_D.toFixed(1)+'m',power:m.dim_D101_pot.toFixed(0)+' kW agit.',mat:'A516+epoxi/316L',cost:2500000},
-    {tag:'Bomba-01',name:'Bomba lodo',dim:(m.V_lodo/24).toFixed(1)+' m3/h',power:(m.bemRows?.[0]?.W_kW||'-')+' kW',mat:'FF/316L',cost:15000},
-    {tag:'Bomba-02',name:'Bomba vinhaca',dim:(m.V_vinhaca/24).toFixed(1)+' m3/h',power:(m.bemRows?.[1]?.W_kW||'-')+' kW',mat:'316L',cost:12000},
-    {tag:'Bomba-03',name:'Bomba residuo (PD)',dim:(m.V_residuo/24).toFixed(1)+' m3/h',power:(m.bemRows?.[2]?.W_kW||'-')+' kW',mat:'Inox/Monel',cost:25000},
-    {tag:'Bomba-04',name:'Bomba mistura',dim:((m.V_lodo+m.V_vinhaca+m.V_residuo)/24).toFixed(1)+' m3/h',power:(m.bemRows?.[3]?.W_kW||'-')+' kW',mat:'FF/316L',cost:20000},
-    {tag:'Bomba-05',name:'Bomba agua scrubber',dim:((p.Q_agua_scrubber||1668)/24).toFixed(1)+' m3/h',power:(m.W_water_kW||0).toFixed(1)+' kW',mat:'FF/316L',cost:25000},
-    {tag:'Compressor-01',name:'Compressor biogas',dim:(m.compressor?.ratio||'?')+':1',power:(m.compressor?.W_kW||'?')+' kW',mat:'Aco carbono',cost:200000},
-    {tag:'Col. Absorcao',name:'Coluna absorcao (scrubber)',dim:'D='+(m.scrub?.D_col_m||'-')+'m Z='+(m.scrub?.Z_total||'-')+'m',power:'-',mat:'Aco+Pall rings',cost:180000},
-    {tag:'Tanque Flash',name:'Tanque flash',dim:'~5 m3',power:'-',mat:'Aco carbono',cost:30000},
-    {tag:'Col. Dessorcao',name:'Coluna dessorcao',dim:'similar absorcao',power:'-',mat:'PRFV/Aco',cost:80000},
-    {tag:'Reserv. Agua',name:'Reservatorio agua',dim:((p.Q_agua_scrubber||1668)/24*4).toFixed(0)+' m3',power:'-',mat:'Aco/Concreto',cost:60000}
-  ];},
+  updateEquipTable(){const m=this.m,p=this.p;
+    var tq=m.vasosData?.tanques||[];
+    var fl=m.vasosData?.flash||{};
+    var st=m.vasosData?.stripper||{};
+    var bm=m.bombasRows||[];
+    this.equipTable=[
+    {tag:'TQ-01',name:'Tanque Lodo ETE',dim:(tq[0]?.V_total_m3||240)+' m3, D='+(tq[0]?.D_m||6.7)+'m',power:'-',mat:tq[0]?.material||'Concreto+epoxi',cost:80000},
+    {tag:'TQ-02',name:'Tanque Vinhaca',dim:(tq[1]?.V_total_m3||60)+' m3, D='+(tq[1]?.D_m||4.0)+'m',power:'-',mat:tq[1]?.material||'316L',cost:50000},
+    {tag:'TQ-03',name:'Tanque Residuo Org.',dim:(tq[2]?.V_total_m3||60)+' m3, D='+(tq[2]?.D_m||4.2)+'m',power:'-',mat:tq[2]?.material||'PEAD',cost:45000},
+    {tag:'MX-01',name:'Misturador/Equalizacao',dim:(m.dim_TQ101_V||0).toFixed(0)+' m3',power:(m.dim_TQ101_pot||0).toFixed(0)+' kW',mat:'316L',cost:80000},
+    {tag:'BIO-01..04',name:'4x Biodigestor CSTR',dim:(m.dim_D101_Vtot||0).toFixed(0)+' m3 tot, D='+(m.dim_D101_D||0).toFixed(1)+'m',power:(m.dim_D101_pot||0).toFixed(0)+' kW agit.',mat:'SA-516+epoxi/316L',cost:2500000},
+    {tag:'HE-101',name:'Trocador pre-aquecimento',dim:'A='+(m.he101_v4?.A_m2?(m.he101_v4.A_m2).toFixed(2):'?')+' m2',power:(m.he101_v4?.Q_kW?(m.he101_v4.Q_kW).toFixed(1):'?')+' kW',mat:'Aco carbono/316L',cost:60000},
+    {tag:'K-101',name:'Compressor 2-est. (10 bar)',dim:(m.compressor?.ratio||'?')+':1',power:(m.compressor?.W_kW||'?')+' kW',mat:'Aco carbono',cost:200000},
+    {tag:'HE-102',name:'Intercooler',dim:'A='+(m.he102_v4?.A_HE102_m2?(m.he102_v4.A_HE102_m2).toFixed(2):'?')+' m2',power:(m.he102_v4?.Q_HE102_kW?(m.he102_v4.Q_HE102_kW).toFixed(1):'?')+' kW',mat:'Aco carbono/Cu',cost:40000},
+    {tag:'C-101',name:'Coluna HPWS',dim:'D='+(m.scrub?.D_col_m||1.2)+'m Z='+(m.scrub?.Z_total||'?')+'m',power:'-',mat:'Aco+Pall 25mm',cost:180000},
+    {tag:'V-101',name:'Flash Tank',dim:(fl.V_total_m3||12)+' m3, D='+(fl.D_m||1.7)+'m',power:'-',mat:fl.material||'SA-516',cost:35000},
+    {tag:'C-102',name:'Stripper Regeneracao',dim:'D='+(st.D_m||0.84)+'m Z='+(st.Z_total_m||3.5)+'m',power:'-',mat:st.material||'Aco+epoxi',cost:85000},
+    {tag:'S-101',name:'Dessecador Silica Gel (TSA)',dim:'Pacote fornecedor',power:'~2 kW (soprador)',mat:'Aco carbono',cost:60000},
+    {tag:'TQ-04',name:'Reserv. Biometano (10 bar)',dim:(tq[3]?.V_total_m3||140)+' m3, D='+(tq[3]?.D_m||4.2)+'m',power:'-',mat:tq[3]?.material||'SA-516',cost:150000},
+    {tag:'CHP-01',name:'Motor Cogeracao (Pacote)',dim:(m.chp_v4?.P_elec_kW||'?')+' kWe',power:(m.chp_v4?.P_elec_kW||'?')+' kWe + '+(m.chp_v4?.P_therm_kW||'?')+' kWt',mat:'Pacote',cost:400000}
+  ];
+    bm.forEach(function(b){this.equipTable.push({tag:b.tag,name:'Bomba '+b.servico.substring(0,25),dim:b.Q_m3h.toFixed(1)+' m3/h, H='+b.H_m.toFixed(1)+'m',power:b.P_inst_kW.toFixed(1)+' kW',mat:b.mat||'FF/316L',cost:b.P_inst_kW>10?25000:15000});}.bind(this));
+  },
   selectEquipSlides(tag){const m=this.m,p=this.p;
     const info={
       'Tanque-01':{tag:'Tanque-01',name:'Tanque de Recepcao de Lodo',

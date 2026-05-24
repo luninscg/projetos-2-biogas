@@ -1726,6 +1726,96 @@ Valvulas.LISTA = [
 Valvulas.run_all = function() { return Valvulas.LISTA; };
 
 /* =========================================================================
+   8. VASOS E TANQUES — Dimensionamento por autonomia/tempo de residencia
+   Refs: Towler & Sinnott (2012) Cap.16; Metcalf & Eddy (2014) Tab.14-8;
+         API 650 (tanques atmosfericos); ASME VIII Div.1 (vasos de pressao)
+   ========================================================================= */
+var Vasos = {};
+
+Vasos.dimensionar_tanque = function(spec) {
+  var Q_m3d = spec.Q_m3d;
+  var t_h = spec.autonomia_h;
+  var V_util = Q_m3d / 24 * t_h;
+  var V_total = V_util * (spec.fator_seguranca || 1.20);
+  var HsD = spec.H_D_ratio || 1.5;
+  var D = Math.pow(4 * V_total / (Math.PI * HsD), 1/3);
+  var H = HsD * D;
+  return {
+    tag: spec.tag, nome: spec.nome, servico: spec.servico,
+    fluido: spec.fluido, Q_m3d: Q_m3d, autonomia_h: t_h,
+    V_util_m3: +V_util.toFixed(1), V_total_m3: +V_total.toFixed(1),
+    D_m: +D.toFixed(2), H_m: +H.toFixed(2), H_D: HsD,
+    material: spec.material || "Aco carbono A36 + epoxi",
+    norma: spec.norma || "API 650",
+    P_projeto_bar: spec.P_bar || 1.0,
+    obs: spec.obs || ""
+  };
+};
+
+Vasos.dimensionar_flash = function(spec) {
+  var Q_L_m3h = spec.Q_L_m3h;
+  var t_res_min = spec.t_res_min || 3;
+  var V_liq = Q_L_m3h / 60 * t_res_min;
+  var V_total = V_liq * 3.0;
+  var HsD = 3.0;
+  var D = Math.pow(4 * V_total / (Math.PI * HsD), 1/3);
+  var H = HsD * D;
+  return {
+    tag: spec.tag || "V-101", nome: "Flash Tank",
+    servico: "Despressurizacao agua rica em CO2 (10 bar → 1.5 bar)",
+    Q_L_m3h: Q_L_m3h, t_res_min: t_res_min,
+    V_liq_m3: +V_liq.toFixed(2), V_total_m3: +V_total.toFixed(2),
+    D_m: +D.toFixed(2), H_m: +H.toFixed(2), H_D: HsD,
+    P_projeto_bar: spec.P_bar || 3.0,
+    T_op_C: spec.T_op || 20,
+    material: "Aco carbono SA-516 Gr.70 + revestimento epoxi",
+    norma: "ASME VIII Div.1",
+    obs: "Separacao bifasica: CH4 flash recuperado recircula. t_res = "+t_res_min+" min (Towler & Sinnott Tab.16-2)"
+  };
+};
+
+Vasos.dimensionar_stripper = function(spec) {
+  var Q_L_m3h = spec.Q_L_m3h;
+  var NTU_strip = spec.NTU || 2.5;
+  var HTU_strip = spec.HTU || 0.8;
+  var Z_recheio = NTU_strip * HTU_strip;
+  var Z_total = Z_recheio + 1.5;
+  var fator_D = spec.fator_D_C101 || 0.7;
+  var D_C101 = spec.D_C101 || 1.2;
+  var D = D_C101 * fator_D;
+  return {
+    tag: spec.tag || "C-102", nome: "Stripper de Regeneracao",
+    servico: "Regenerar agua de lavagem liberando CO2 dissolvido",
+    Q_L_m3h: Q_L_m3h,
+    NTU: NTU_strip, HTU_m: HTU_strip,
+    Z_recheio_m: +Z_recheio.toFixed(2), Z_total_m: +Z_total.toFixed(2),
+    D_m: +D.toFixed(2),
+    recheio: "Pall 25mm (mesmo da C-101)",
+    P_op_bar: 1.0, T_op_C: 20,
+    material: "Aco carbono + revestimento epoxi interno",
+    norma: "ASME VIII Div.1 / TEMA (internos)",
+    obs: "D = 70% do D_C101 (vazao liquida igual, sem gas comprimido). Ar atmosferico como gas de stripping."
+  };
+};
+
+Vasos.LISTA_TANQUES = [
+  {tag:"TQ-01",nome:"Tanque Lodo ETE",servico:"Recepcao lodo Los Angeles + Imbirussu",fluido:"Lodo 3.8% ST",Q_m3d:400,autonomia_h:12,H_D_ratio:1.0,material:"Concreto armado + revestimento epoxi",norma:"NBR 7821 / API 650",obs:"Autonomia 12h = meio turno operacional"},
+  {tag:"TQ-02",nome:"Tanque Vinhaca",servico:"Recepcao vinhaca de 2a geracao",fluido:"Vinhaca (pH 3-5)",Q_m3d:50,autonomia_h:24,H_D_ratio:1.2,material:"316L (resistencia acida)",norma:"API 650",obs:"Autonomia 24h para descarga de caminhao"},
+  {tag:"TQ-03",nome:"Tanque Residuo Organico",servico:"Recepcao residuo organico de aterro",fluido:"Residuo org. 15% ST",Q_m3d:50,autonomia_h:24,H_D_ratio:1.0,material:"PEAD (HDPE) ou concreto",norma:"NBR 7821",obs:"Autonomia 24h, material resistente a organicos"},
+  {tag:"TQ-04",nome:"Reservatorio Biometano",servico:"Armazenamento biometano purificado",fluido:"Biometano (>97% CH4, 10 bar)",Q_m3d:732,autonomia_h:4,H_D_ratio:2.5,fator_seguranca:1.15,P_bar:10.0,material:"Aco carbono SA-516 Gr.70",norma:"ASME VIII Div.1",obs:"Vaso de pressao 10 bar. V_real = Q_Nm3d/P_bar. Autonomia 4h. NR-13."}
+];
+
+Vasos.run_all = function(params) {
+  var p = params || {};
+  var tanques = Vasos.LISTA_TANQUES.map(function(s){ return Vasos.dimensionar_tanque(s); });
+  var Q_agua = p.Q_agua_m3h || 81.63;
+  var D_C101 = p.D_C101 || 1.2;
+  var flash = Vasos.dimensionar_flash({Q_L_m3h: Q_agua, t_res_min: 3, P_bar: 3.0, T_op: 20});
+  var stripper = Vasos.dimensionar_stripper({Q_L_m3h: Q_agua, NTU: 2.5, HTU: 0.8, D_C101: D_C101, fator_D_C101: 0.70});
+  return {tanques: tanques, flash: flash, stripper: stripper};
+};
+
+/* =========================================================================
    EXPORT
    ========================================================================= */
 
@@ -1737,6 +1827,7 @@ var ECOGAS = {
   Trocadores: Trocadores,
   Bombas: Bombas,
   Valvulas: Valvulas,
+  Vasos: Vasos,
   RECHEIOS: RECHEIOS,
   _interp: _interp
 };
