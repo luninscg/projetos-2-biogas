@@ -58,9 +58,9 @@ body{font-family:'Segoe UI',system-ui,sans-serif}
   <div class="flex items-center gap-3">
     <div class="w-9 h-9 bg-amber-500 rounded-lg flex items-center justify-center font-bold text-gray-900 text-base">B</div>
     <div>
-      <h1 class="text-base font-bold text-white leading-tight">Biogas por Codigestao Anaerobia</h1>
-      <p class="text-xs text-gray-500">Projetos Industriais II - UFMS - v6.0 (Onda 1968 / Colebrook-White / GPDC / Kern) | <span x-text="checksOk+'/'+m.checks?.length+' checks'"></span> + <span x-text="(m.checksRig||[]).filter(c=>c.ok).length+'/'+(m.checksRig||[]).length+' rig.'"></span> · <span class="text-amber-600/90">Rota oficial: biometano (<em>water scrubbing</em>)</span></p>
-      <p class="text-[10px] text-gray-600 mt-0.5"><a href="diagramas_confiaveis_biogas/index.html" class="text-sky-400 hover:underline">Diagramas auditáveis (tubulação)</a> · <span class="text-gray-500">Fonte numérica: <code>tubulacao_biogas.xlsx</code> (maestro). Memorial Excel: abas do maestro incorporadas num único ficheiro — atualizar com <code class="text-emerald-400">python sincronizar_memorial_maestro.py</code>. Sliders = cenário local. Docs: DECISOES_FONTE_UNICA.md, AUDITORIA_FONTES.md</span></p>
+      <h1 class="text-base font-bold text-white leading-tight">ECOGAS — Biometano por Codigestao Anaerobia</h1>
+      <p class="text-xs text-gray-500">Projetos Industriais II - UFMS - v7.0 Pipeline Cascata (Haldane/NTU-HTU/Colebrook/Kern) | <span x-text="checksOk+'/'+m.checks?.length+' checks'"></span> + <span x-text="(m.checksRig||[]).filter(c=>c.ok).length+'/'+(m.checksRig||[]).length+' v4'"></span> · <span class="text-amber-600/90">Integrado: ecogas_v4 (cascata oficial do grupo)</span></p>
+      <p class="text-[10px] text-gray-600 mt-0.5"><span class="text-gray-500">Pipeline: MX-01 → BIO → HE-101 → K-101/HE-102 → C-101 HPWS → S-101 → CHP-01 → Hidraulica. Fonte: <code class="text-emerald-400">GRUPO/ecogas_v4</code>. Sliders = analise de sensibilidade.</span></p>
     </div>
   </div>
   <div class="flex items-center gap-1.5">
@@ -964,27 +964,39 @@ body{font-family:'Segoe UI',system-ui,sans-serif}
 
 <script>
 function createModel(p,taxa){const m={};m.V_lodo=p.Q_tot*p.x_lodo;m.V_vinhaca=p.Q_tot*p.x_vinhaca;m.V_residuo=p.Q_tot*p.x_residuo;m.M_lodo=m.V_lodo*p.rho_lodo;m.M_vinhaca=m.V_vinhaca*p.rho_vinhaca;m.M_residuo=m.V_residuo*p.rho_residuo;m.M_total=m.M_lodo+m.M_vinhaca+m.M_residuo;m.ST_lodo=m.M_lodo*p.ST_lodo_pct/100;m.ST_vinhaca=m.M_vinhaca*p.ST_vinhaca_pct/100;m.ST_residuo=m.M_residuo*p.ST_residuo_pct/100;m.ST_total=m.ST_lodo+m.ST_vinhaca+m.ST_residuo;m.SV_lodo=m.ST_lodo*p.SVST_lodo/100;m.SV_vinhaca=m.ST_vinhaca*p.SVST_vinhaca/100;m.SV_residuo=m.ST_residuo*p.SVST_residuo/100;m.SV_total=m.SV_lodo+m.SV_vinhaca+m.SV_residuo;m.CN=(m.SV_lodo*p.CN_lodo+m.SV_vinhaca*p.CN_vinhaca+m.SV_residuo*p.CN_residuo)/m.SV_total;m.SV_removido=m.SV_total*p.eta_SV/100;m.V_biogas=m.SV_removido*p.Y_bg;m.V_CH4=m.V_biogas*p.CH4_pct/100;m.V_CO2=m.V_biogas*p.CO2_pct/100;m.V_outros=m.V_biogas*p.outros_pct/100;m.n_CH4=m.V_CH4/p.Vm;m.m_CH4=m.n_CH4*p.MM_CH4;m.n_CO2=m.V_CO2/p.Vm;m.m_CO2=m.n_CO2*p.MM_CO2;m.n_outros=m.V_outros/p.Vm;m.m_outros=m.n_outros*p.MM_outros;m.M_biogas=m.m_CH4+m.m_CO2+m.m_outros;m.V_reator=p.Q_tot*p.TRH;m.COV=m.SV_total/m.V_reator;m.SV_residual=m.SV_total-m.SV_removido;m.SF=m.ST_total-m.SV_total;m.ST_digestato=m.SV_residual+m.SF;m.M_digestato=m.M_total-m.M_biogas;const el=(sL,sV,sR,pL,pV,pR)=>sL*pL/100+sV*pV/100+sR*pR/100;m.C_in=el(m.SV_lodo,m.SV_vinhaca,m.SV_residuo,p.C_lodo,p.C_vinhaca,p.C_residuo);m.H_in=el(m.SV_lodo,m.SV_vinhaca,m.SV_residuo,p.H_lodo,p.H_vinhaca,p.H_residuo);m.O_in=el(m.SV_lodo,m.SV_vinhaca,m.SV_residuo,p.O_lodo,p.O_vinhaca,p.O_residuo);m.N_in=el(m.SV_lodo,m.SV_vinhaca,m.SV_residuo,p.N_lodo,p.N_vinhaca,p.N_residuo);m.S_in=el(m.SV_lodo,m.SV_vinhaca,m.SV_residuo,p.S_lodo,p.S_vinhaca,p.S_residuo);m.C_gas=m.n_CH4*p.M_C+m.n_CO2*p.M_C;m.H_gas=m.n_CH4*4;m.O_gas=m.n_CO2*32;m.N_gas=0;m.S_gas=0;m.C_dig=m.C_in-m.C_gas;m.H_dig=m.H_in-m.H_gas;m.O_dig=m.O_in-m.O_gas;m.N_dig=m.N_in;m.S_dig=m.S_in;m.CN_elementar=m.C_in/m.N_in;m.Q_aquec=m.M_total*p.Cp*(p.T_dig-p.T_in)/1000;m.Q_perdas=m.Q_aquec*p.perdas_pct/100;m.Q_reacao=p.q_reacao*m.SV_removido;m.Q_demanda=m.Q_aquec+m.Q_perdas-m.Q_reacao;m.E_biogas=m.V_CH4*p.PCI;m.E_el_MJ=m.E_biogas*p.eta_el;m.E_el_kWh=m.E_el_MJ/3.6;m.Q_CHP=m.E_biogas*p.eta_th;m.Q_excedente=m.Q_CHP-m.Q_demanda;m.E_aux=m.E_el_kWh*p.aux_pct;m.E_liq=m.E_el_kWh-m.E_aux;m.P_media=m.E_liq/24;m.dim_TQ101_V=p.Q_tot*0.5*1.2;m.dim_TQ101_D=Math.pow(4*m.dim_TQ101_V/Math.PI,1/3);m.dim_TQ101_pot=0.5*m.dim_TQ101_V;m.dim_D101_V=m.V_reator;m.dim_D101_Vtot=m.V_reator*1.15;m.dim_D101_D=Math.pow(4*m.V_reator/(1.5*Math.PI),1/3);m.dim_D101_Hliq=1.5*m.dim_D101_D;m.dim_D101_Htot=m.dim_D101_Hliq+3;m.dim_D101_pot=0.010*m.V_reator;m.dim_TC101_Q=m.Q_aquec;m.dim_TC101_kW=m.Q_aquec/86.4;const LMTD=(45-30)/Math.log(45/30);m.dim_TC101_LMTD=LMTD;m.dim_TC101_A=(m.dim_TC101_kW*1000)/(800*LMTD)*1.3;m.dim_P101_Q=p.Q_tot/24;m.dim_P101_kW=(m.M_total/Math.max(p.Q_tot,1e-9))*9.81*(m.dim_P101_Q/3600)*(p.H_man_B01||23.33)/(p.eta_bomba_equip||0.6)/1000;m.dim_MG101_PkW=p.P_C01_kW_maestro||3.43;m.dim_P102_kW=p.P_P102_kW_maestro||9.47;m.dim_MG101_comb=m.V_biogas;m.dim_MG101_Eq=m.E_biogas;m.dim_MG101_Pel=m.E_el_MJ/86.4;m.dim_MG101_Pth=m.Q_CHP/86.4;m.dim_TQ102_V=m.V_biogas/24*6;m.dim_DS101_Qh=m.V_biogas/24;m.dim_DS101_Vcarvao=m.dim_DS101_Qh/60*3;m.M_torta=m.ST_digestato/(p.ST_desaguado/100);m.M_filtrado=m.M_digestato-m.M_torta;const fob={TQ101:80000,P101:15000,TC101:50000,D101:2500000,P102:15000,FP101:300000,MG101:600000,TQ102:150000,DS101:40000,TQ103:5000,tub:400000,elet:200000};m.FOB_total=Object.values(fob).reduce((a,b)=>a+b,0);m.capex_instalado=m.FOB_total*3.6;m.capital_giro=m.capex_instalado*0.15;m.capex_total=m.capex_instalado+m.capital_giro;m.fob=fob;m.opex_mdo=4*120000;m.opex_naoh=100*365*4;m.opex_carvao=16*365*15;m.opex_agua=2.6*365*10;m.opex_manut=m.capex_instalado*0.03;m.opex_descarte=m.ST_digestato*365*p.preco_descarte;m.opex_seguro=m.capex_instalado*0.02;m.opex_anual=m.opex_mdo+m.opex_naoh+m.opex_carvao+m.opex_agua+m.opex_manut+m.opex_descarte+m.opex_seguro;m.rec_eletric=m.E_liq*365*p.preco_eletric;m.rec_biofert=m.M_torta*365*0.05;m.rec_carbono=m.V_CH4*365*0.000714*200;m.receita_anual=m.rec_eletric+m.rec_biofert+m.rec_carbono;m.resultado_anual=m.receita_anual-m.opex_anual;const tx=taxa||0.10;m.fluxo_caixa=[];let vplAcum=-m.capex_total;m.fluxo_caixa.push({ano:0,inv:-m.capex_total,rec:0,opex:0,liq:-m.capex_total,desc:-m.capex_total,vplAcum});for(let y=1;y<=20;y++){const liq=m.resultado_anual,desc=liq/Math.pow(1+tx,y);vplAcum+=desc;m.fluxo_caixa.push({ano:y,inv:0,rec:m.receita_anual,opex:m.opex_anual,liq,desc,vplAcum});}m.vpl=vplAcum;m.tir=null;m.tir_str='N/A';if(m.resultado_anual>0){let r=0.05;for(let it=0;it<200;it++){let npv=-m.capex_total,dnpv=0;for(let y=1;y<=20;y++){npv+=m.resultado_anual/Math.pow(1+r,y);dnpv-=y*m.resultado_anual/Math.pow(1+r,y+1);}if(Math.abs(dnpv)<1e-12)break;r-=npv/dnpv;if(Math.abs(npv)<1)break;}if(r>-1&&r<5){m.tir=r;m.tir_str=(r*100).toFixed(2)+'% a.a.';}}if(m.resultado_anual>0){m.payback=m.capex_total/m.resultado_anual;m.payback_str=m.payback.toFixed(1)+' anos';}else{m.payback=Infinity;m.payback_str='Nao se paga';}m.S_to_H2S_frac=0.70;m.H2S_kg=m.S_in*m.S_to_H2S_frac*(34/32);m.H2S_vol_Nm3=m.H2S_kg/1.539;m.H2S_ppm=m.V_biogas>0?(m.H2S_vol_Nm3/m.V_biogas)*1e6:0;m.H2S_alert=m.H2S_ppm>500;m.checks=[{name:'Fech. massa',short:'M',ok:Math.abs(m.M_total-m.M_biogas-m.M_digestato)<1},{name:'ST dig.',short:'ST',ok:Math.abs(m.SF+m.SV_residual-m.ST_digestato)<0.01},{name:'C/N 20-30',short:'C/N',ok:m.CN>=20&&m.CN<=30},{name:'COV 1-4',short:'COV',ok:m.COV>=1&&m.COV<=4},{name:'Autossuf. Q',short:'Q',ok:m.Q_excedente>=0},{name:'H2S<500ppm',short:'H2S',ok:!m.H2S_alert},{name:'Bg=100%',short:'%bg',ok:Math.abs(p.CH4_pct+p.CO2_pct+p.outros_pct-100)<0.01},{name:'eL=100%',short:'eL',ok:Math.abs(p.C_lodo+p.H_lodo+p.O_lodo+p.N_lodo+p.S_lodo-100)<0.1},{name:'eV=100%',short:'eV',ok:Math.abs(p.C_vinhaca+p.H_vinhaca+p.O_vinhaca+p.N_vinhaca+p.S_vinhaca-100)<0.1},{name:'eR>=95%',short:'eR',ok:(p.C_residuo+p.H_residuo+p.O_residuo+p.N_residuo+p.S_residuo)>=95},{name:'xS=1',short:'xS',ok:Math.abs(p.x_lodo+p.x_vinhaca+p.x_residuo-1)<0.001}];m.checksOk=m.checks.filter(c=>c.ok).length;extendEngineering(m,p);
-// HPWS rigorosa (Onda 1968 + Treybal + GPDC)
-if(typeof calcularHPWS==='function'){
+// ══ PIPELINE v4 INTEGRADO (cascata ECOGAS) ══
+if(typeof ECOGAS!=='undefined' && ECOGAS.Pipeline){
   try{
-    m.hpws=calcularHPWS({Q_biogas_Nm3d:m.V_biogas||7342.854,T_op_C:p.T_scrub||20,P_man_bar:((p.P2_compressor_Pa||1001325)-101325)/1e5});
-  }catch(e){m.hpws={};}
-}else{m.hpws={};}
-// Hidráulica rigorosa (Colebrook-White + 12 trechos)
-if(typeof runAllLines==='function'){
-  try{m.hydRig=runAllLines();}catch(e){m.hydRig=[];}
+    var pv4=ECOGAS.Pipeline.run();
+    m.pipeV4=pv4;
+    // Sobrescrever biogas com dados v4 (fonte oficial do grupo)
+    m.V_biogas_v4=pv4.bio.Q_bg_Nm3d;
+    m.V_CH4_v4=pv4.bio.Q_CH4_Nm3d;
+    m.V_biometano=pv4.hpws.Q_biometano_Nm3d;
+    m.Q_agua_hpws_m3h=pv4.hpws.Q_agua_lavagem_m3h;
+    m.he101_v4=pv4.he101;
+    m.he102_v4=pv4.comp;
+    m.chp_v4=pv4.chp;
+    m.hpws_v4=pv4.hpws;
+    m.bio_v4=pv4.bio;
+    m.sanity_v4=pv4.sanity;
+    // Calcular HPWS completa via Onda para comparacao
+    m.hpws=new ECOGAS.ColunaHPWS({Q_biogas_Nm3d:pv4.bio.Q_bg_Nm3d,T_op_C:p.T_scrub||20,P_man_bar:9.0}).run();
+  }catch(e){m.hpws={};m.pipeV4=null;}
+}else{m.hpws={};m.pipeV4=null;}
+// Hidráulica rigorosa (Colebrook-White + 13 trechos v4)
+if(typeof ECOGAS!=='undefined' && ECOGAS.Hidraulica){
+  try{m.hydRig=ECOGAS.Hidraulica.run_all_lines();}catch(e){m.hydRig=[];}
 }else{m.hydRig=[];}
 // Trocadores de calor
-if(typeof calcHE101==='function'){
+if(typeof ECOGAS!=='undefined' && ECOGAS.Trocadores){
   try{
-    m.he101=calcHE101(p.T_in||25,p.T_dig||35,90,(m.M_total||0)/86400);
-    m.he102=calcHE102(m.compressor?.T_out_num||127,40,((p.P2_compressor_Pa||350000)/1e5));
+    m.he101=ECOGAS.Trocadores.dim_HE101({m_lodo:(m.M_total||0)/86400,T_lodo_in:p.T_in||25,T_lodo_out:p.T_dig||35});
+    m.he102=ECOGAS.Trocadores.dim_HE102({m_gas:0.1669});
   }catch(e){m.he101={};m.he102={};}
 }else{m.he101={};m.he102={};}
-// Checks de coerência (10 verificações)
-if(typeof runChecks==='function'){
-  try{m.checksRig=runChecks(m,m.hpws,m.hydRig);}catch(e){m.checksRig=[];}
-}else{m.checksRig=[];}
+// Checks v4 sanity
+m.checksRig=m.sanity_v4?m.sanity_v4.checks.map(function(c){return{name:c.name,ok:c.ok};}):[];
 return m;}
 function extendEngineering(m,p){
   const pi=Math.PI,g=9.81;
@@ -1216,7 +1228,7 @@ function extendEngineering(m,p){
     consumers:beConsumers
   };
 }
-function defaultParams(){return{Q_tot:500,x_lodo:0.80,x_vinhaca:0.10,x_residuo:0.10,rho_lodo:1020,rho_vinhaca:1050,rho_residuo:1080,ST_lodo_pct:3.823529412,ST_vinhaca_pct:2.380952381,ST_residuo_pct:13.888888889,SVST_lodo:70,SVST_vinhaca:85,SVST_residuo:80,CN_lodo:20,CN_vinhaca:25,CN_residuo:30,C_lodo:51.0,H_lodo:7.9,O_lodo:34.6,N_lodo:5.4,S_lodo:1.1,C_vinhaca:43.0,H_vinhaca:6.5,O_vinhaca:46.0,N_vinhaca:3.5,S_vinhaca:1.0,C_residuo:48.0,H_residuo:6.4,O_residuo:42.0,N_residuo:3.2,S_residuo:0.4,T_in:20,T_dig:35,TRH:30,eta_SV:70,Y_bg:0.5833333201,CH4_pct:60,CO2_pct:40,outros_pct:0,Cp:4.0,perdas_pct:15,PCI:35.8,eta_el:0.38,eta_th:0.42,aux_pct:0.05,q_reacao:1.2,preco_eletric:0.75,preco_descarte:0.30,ST_desaguado:25,MM_CH4:16,MM_CO2:44,MM_H2O:18,M_C:12,Vm:22.414,MM_outros:29,H_man_B01:23.33,eta_bomba_equip:0.6,P_P102_kW_maestro:9.47,P_C01_kW_maestro:3.43,P2_compressor_Pa:350000,dP_agua_Pa:490365,T_scrub:25,HETP:0.6,Q_agua_scrubber:1668.571};}
+function defaultParams(){return{Q_tot:500,x_lodo:0.80,x_vinhaca:0.10,x_residuo:0.10,rho_lodo:1020,rho_vinhaca:1050,rho_residuo:1080,ST_lodo_pct:3.823529412,ST_vinhaca_pct:2.380952381,ST_residuo_pct:13.888888889,SVST_lodo:70,SVST_vinhaca:85,SVST_residuo:80,CN_lodo:20,CN_vinhaca:25,CN_residuo:30,C_lodo:51.0,H_lodo:7.9,O_lodo:34.6,N_lodo:5.4,S_lodo:1.1,C_vinhaca:43.0,H_vinhaca:6.5,O_vinhaca:46.0,N_vinhaca:3.5,S_vinhaca:1.0,C_residuo:48.0,H_residuo:6.4,O_residuo:42.0,N_residuo:3.2,S_residuo:0.4,T_in:25,T_dig:35,TRH:28.8,eta_SV:70,Y_bg:0.5833333201,CH4_pct:60,CO2_pct:40,outros_pct:0,Cp:4.0,perdas_pct:15,PCI:35.8,eta_el:0.40,eta_th:0.45,aux_pct:0.05,q_reacao:1.2,preco_eletric:0.75,preco_descarte:0.30,ST_desaguado:25,MM_CH4:16,MM_CO2:44,MM_H2O:18,M_C:12,Vm:22.414,MM_outros:29,H_man_B01:23.33,eta_bomba_equip:0.6,P_P102_kW_maestro:9.47,P_C01_kW_maestro:3.43,P2_compressor_Pa:1001325,dP_agua_Pa:900000,T_scrub:20,HETP:0.6,Q_agua_scrubber:1959};}
 function drawPFDSlides(svg,m,onClickEquip){
   svg.innerHTML='';
   const ns='http://www.w3.org/2000/svg';
@@ -1342,7 +1354,7 @@ function app(){return{
     {name:'3: +Tarifa+BNDES',p:{...defaultParams(),Q_tot:200,x_lodo:0.35,x_vinhaca:0.25,x_residuo:0.40,eta_SV:60,Y_bg:0.70,preco_eletric:1.50},taxa:0.06}
   ],
   init(){
-    const ir={Q_tot:[450,550],x_lodo:[0.70,0.85],x_vinhaca:[0.08,0.15],x_residuo:[0.08,0.15],TRH:[28,32],T_dig:[33,37],eta_SV:[65,75],Y_bg:[0.55,0.62],preco_eletric:[0.50,2.00],preco_descarte:[0.15,0.50],P2_compressor_Pa:[300000,500000],dP_agua_Pa:[200000,700000],T_scrub:[15,30],HETP:[0.4,0.8],Q_agua_scrubber:[1000,2500]};
+    const ir={Q_tot:[450,550],x_lodo:[0.70,0.85],x_vinhaca:[0.08,0.15],x_residuo:[0.08,0.15],TRH:[25,32],T_dig:[33,37],eta_SV:[65,80],Y_bg:[0.55,0.62],preco_eletric:[0.50,2.00],preco_descarte:[0.15,0.50],P2_compressor_Pa:[800000,1100000],dP_agua_Pa:[700000,1000000],T_scrub:[15,25],HETP:[0.4,0.8],Q_agua_scrubber:[1800,2200]};
     this.sliders=[
       {id:'Q_tot',label:'Q total',val:this.p.Q_tot,min:300,max:700,step:10,dec:0,unit:'m3/d',key:'Q_tot'},
       {id:'x_lodo',label:'Frac. lodo',val:this.p.x_lodo,min:0.1,max:0.8,step:0.05,dec:2,unit:'',key:'x_lodo'},
@@ -1367,16 +1379,16 @@ function app(){return{
   saveCurrentToScenario(){const i=this.activeScenario;this.savedScenarios[i].p={...this.p};this.savedScenarios[i].taxa=this.taxaDesconto;},
   recalc(){this.sliders.forEach(s=>{this.p[s.key]=s.val;});const sum=this.p.x_lodo+this.p.x_vinhaca+this.p.x_residuo;if(Math.abs(sum-1)>0.001){this.p.x_residuo=Math.max(0,1-this.p.x_lodo-this.p.x_vinhaca);const rs=this.sliders.find(s=>s.key==='x_residuo');if(rs)rs.val=this.p.x_residuo;}this.m=createModel(this.p,this.taxaDesconto);this.checks=this.m.checks;this.checksOk=this.m.checksOk;this.updateKPIs();this.updateCorrentes();this.updateElemental();this.updateEquipTable();this.computeScenarios();this.$nextTick(()=>{const svg=document.getElementById('pfd-svg');if(svg)drawPFDSlides(svg,this.m,t=>this.selectEquipSlides(t));this.renderCharts();});},
   resetDefaults(){this.p=defaultParams();this.taxaDesconto=0.10;this.sliders.forEach(s=>{s.val=this.p[s.key];});this.recalc();},
-  updateKPIs(){const m=this.m;const fN=v=>String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g,'.');this.kpis=[
-    {label:'Biogas',display:fN(m.V_biogas),unit:'Nm3/dia',alert:false,explain:'Volume total de biogas.',formula:'V=SV_rem*Y_bg',range:'Escala'},
-    {label:'CH4',display:fN(m.V_CH4),unit:'Nm3/dia',alert:false,explain:'Metano combustivel (~60%).',formula:'V_CH4=V_bg*%CH4',range:'60-70%'},
+  updateKPIs(){const m=this.m;const fN=v=>String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g,'.');const pv4=m.pipeV4;this.kpis=[
+    {label:'Biogas v4',display:fN(pv4?pv4.bio.Q_bg_Nm3d:m.V_biogas),unit:'Nm3/dia',alert:false,explain:'Volume total de biogas (pipeline v4 cascata).',formula:'DQO_rem × K_CH4 / y_CH4',range:'11.000-13.000'},
+    {label:'Biometano',display:fN(pv4?pv4.hpws.Q_biometano_Nm3d:0),unit:'Nm3/dia',alert:false,explain:'Biometano produto (97.7% CH4, ANP 16/2008).',formula:'HPWS NTU/HTU Treybal',range:'7.000-8.000'},
     {label:'C/N',display:m.CN.toFixed(1),unit:'ideal 20-30',alert:m.CN<20||m.CN>30,explain:'C/N da mistura.',formula:'SUM(SV*CN)/SV_tot',range:'20-30'},
-    {label:'COV',display:m.COV.toFixed(2),unit:'kgSV/m3.d',alert:m.COV<1||m.COV>4,explain:'Carga organica.',formula:'SV/V_reator',range:'1-4'},
-    {label:'E.liq',display:fN(m.E_liq),unit:'kWh/d',alert:false,explain:'Eletric. liquida.',formula:'E*(1-aux)',range:'-'},
-    {label:'Pot.',display:m.P_media.toFixed(1),unit:'kW',alert:false,explain:'Pot. media 24h.',formula:'E_liq/24',range:'-'},
-    {label:'Dig.',display:fN(m.M_digestato),unit:'kg/d',alert:false,explain:'Digestato.',formula:'M_in-M_bg',range:'~98%'},
+    {label:'COV',display:pv4?pv4.bio.COV.toFixed(2):m.COV.toFixed(2),unit:'kgDQO/m3.d',alert:false,explain:'Carga organica volumetrica (DQO base).',formula:'Q*DQO/V_L',range:'1-5'},
+    {label:'P CHP',display:pv4?pv4.chp.P_elec_kW.toFixed(0):'0',unit:'kW',alert:false,explain:'Potencia eletrica gerada pelo CHP (30% biometano).',formula:'E_bm × eta_elec',range:'>300'},
+    {label:'HE-101',display:pv4?pv4.he101.Q_kW.toFixed(0):'0',unit:'kW',alert:false,explain:'Demanda termica pre-aquecimento (feed+parede).',formula:'m*Cp*dT + U*A*dT',range:'250-300'},
+    {label:'Agua HPWS',display:pv4?pv4.hpws.Q_agua_lavagem_m3h:'0',unit:'m3/h',alert:false,explain:'Vazao agua lavagem C-101.',formula:'Ls_op × M_H2O / rho_L × 3600',range:'75-90'},
     {label:'VPL',display:'R$'+fN(m.vpl/1000)+'k',unit:'20a',alert:m.vpl<0,explain:'Valor Presente Liq.',formula:'-CAPEX+SUM(FC/(1+i)^t)',range:'>0'},
-    {label:'H2S',display:Math.round(m.H2S_ppm),unit:'ppm',alert:m.H2S_alert,explain:'H2S estimado no biogas bruto. >500 ppm exige dessulfurizacao reforçada; >2000 ppm corroi motor.',formula:'S_in*0.70*(34/32)/1.539/V_bg*1e6',range:'<500'},
+    {label:'Sanity',display:pv4?(pv4.sanity.n_ok+'/'+pv4.sanity.checks.length):'?',unit:'checks',alert:pv4?!pv4.sanity.all_ok:true,explain:'Consistencia global do pipeline (7 checks).',formula:'T, massa, energia, pureza',range:'7/7'},
   ];},
   updateCorrentes(){const m=this.m,p=this.p;const M_lodo_la=m.M_lodo*0.80,M_lodo_imb=m.M_lodo*0.20;const ST_la=M_lodo_la*0.040,ST_imb=M_lodo_imb*0.035;const SV_la=ST_la*0.70,SV_imb=ST_imb*0.70;this.correntes=[{id:101,desc:'Lodo Los Angeles',mass:M_lodo_la,st:ST_la,sv:SV_la,temp:p.T_in,phase:'Liq/pasta',meaning:'64% da vazao total (planilha colega)'},{id:102,desc:'Lodo Imbirussu',mass:M_lodo_imb,st:ST_imb,sv:SV_imb,temp:p.T_in,phase:'Liq/pasta',meaning:'16% da vazao total (planilha colega)'},{id:103,desc:'Vinhaca',mass:m.M_vinhaca,st:m.ST_vinhaca,sv:m.SV_vinhaca,temp:p.T_in,phase:'Liquido',meaning:'10% da vazao total (planilha colega)'},{id:104,desc:'Residuo organico',mass:m.M_residuo,st:m.ST_residuo,sv:m.SV_residuo,temp:p.T_in,phase:'Pasta',meaning:'10% da vazao total (planilha colega)'},{id:105,desc:'Mistura alimentacao',mass:m.M_total,st:m.ST_total,sv:m.SV_total,temp:p.T_in,phase:'Liq/pasta',meaning:'Saida do misturador/equalizacao'},{id:106,desc:'Corrente ao biodigestor',mass:m.M_total,st:m.ST_total,sv:m.SV_total,temp:p.T_dig,phase:'Liq/pasta',meaning:'Entrada no biodigestor apos condicionamento'},{id:107,desc:'Biogas bruto',mass:m.M_biogas,st:null,sv:null,temp:p.T_dig,phase:'Gas',meaning:'Saida do biodigestor para coluna de absorcao'},{id:108,desc:'Biogas tratado',mass:m.M_biogas*0.99,st:null,sv:null,temp:p.T_dig,phase:'Gas',meaning:'Saida da etapa absorcao/dessorcao'},{id:109,desc:'Digestato',mass:m.M_digestato,st:m.ST_digestato,sv:m.SV_residual,temp:p.T_dig,phase:'Liq/pasta',meaning:'Fundo do biodigestor'},{id:110,desc:'Reciclo liquido processo',mass:m.M_digestato*0.10,st:null,sv:null,temp:p.T_dig,phase:'Liq.',meaning:'Reciclo interno da purificacao (fluxograma slides)'},{id:111,desc:'Produto biometano',mass:m.m_CH4*0.97,st:null,sv:null,temp:p.T_dig,phase:'Gas',meaning:'Corrente produto apos purificacao'},{id:112,desc:'Corrente rejeito CO2',mass:m.m_CO2*0.97,st:null,sv:null,temp:p.T_dig,phase:'Gas',meaning:'Corrente de descarte/vent da purificacao'},{id:113,desc:'Agua de absorcao',mass:null,st:null,sv:null,temp:25,phase:'Liq.',meaning:'Alimentacao da coluna de absorcao'},{id:114,desc:'Agua de dessorcao',mass:null,st:null,sv:null,temp:30,phase:'Liq.',meaning:'Recuperacao no bloco destilacao/dessorcao'},{id:115,desc:'NaOH',mass:100,st:null,sv:null,temp:p.T_in,phase:'Liq.',meaning:'Correcao de pH (se necessario)'},{id:116,desc:'Eletricidade',mass:null,st:null,sv:null,temp:'-',phase:'-',meaning:Math.round(m.E_liq)+' kWh/d'},{id:117,desc:'Calor',mass:null,st:null,sv:null,temp:'-',phase:'-',meaning:Math.round(m.Q_CHP)+' MJ/d'}];},
   updateElemental(){const m=this.m;this.elemental=[{el:'C',input:m.C_in,gas:m.C_gas,dig:m.C_dig,err:m.C_in-m.C_gas-m.C_dig},{el:'H',input:m.H_in,gas:m.H_gas,dig:m.H_dig,err:m.H_in-m.H_gas-m.H_dig},{el:'O',input:m.O_in,gas:m.O_gas,dig:m.O_dig,err:m.O_in-m.O_gas-m.O_dig},{el:'N',input:m.N_in,gas:m.N_gas,dig:m.N_dig,err:m.N_in-m.N_gas-m.N_dig},{el:'S',input:m.S_in,gas:m.S_gas,dig:m.S_dig,err:m.S_in-m.S_gas-m.S_dig}];},
