@@ -1698,6 +1698,34 @@ Bombas.potencia_total = function() {
 
 
 /* =========================================================================
+   7. VALVULAS — Especificacao de valvulas de processo (ISA S75.01 / API 6D)
+   ========================================================================= */
+var Valvulas = {};
+
+Valvulas.LISTA = [
+  {tag:"XV-101",  servico:"Isolamento saida TQ-01 → MX-01",       tipo:"Gaveta",    funcao:"Isolamento", DN:"4\"",  classe:"150#",Cv:236, K:0.17, material:"FF revestido epoxi",norma:"API 6D"},
+  {tag:"CV-101",  servico:"Retencao apos P-101 A/B",               tipo:"Retencao",  funcao:"Anti-refluxo",DN:"2.5\"",classe:"150#",Cv:null,K:2.0,  material:"FF/316L",norma:"API 6D"},
+  {tag:"CV-102",  servico:"Retencao apos P-102 A/B",               tipo:"Retencao",  funcao:"Anti-refluxo",DN:"2.5\"",classe:"150#",Cv:null,K:2.0,  material:"FF/316L",norma:"API 6D"},
+  {tag:"XV-103",  servico:"Isolamento vinhaca TQ-02 → MX-01",     tipo:"Esfera",    funcao:"Isolamento", DN:"1\"",  classe:"150#",Cv:30,  K:0.05, material:"316L",norma:"API 6D"},
+  {tag:"XV-104",  servico:"Isolamento residuo TQ-03 → MX-01",     tipo:"Gaveta",    funcao:"Isolamento", DN:"1.25\"",classe:"150#",Cv:42,K:0.17, material:"316L/Monel",norma:"API 6D"},
+  {tag:"CV-105",  servico:"Retencao apos P-105 A/B (substrato)",   tipo:"Retencao",  funcao:"Anti-refluxo",DN:"4\"",  classe:"150#",Cv:null,K:2.0,  material:"FF revestido",norma:"API 6D"},
+  {tag:"FCV-106", servico:"Controle vazao agua HPWS (P-106 → C-101)",tipo:"Globo",  funcao:"Controle",   DN:"5\"",  classe:"300#",Cv:320, K:10.0, material:"316L",norma:"ISA S75.01"},
+  {tag:"XV-106",  servico:"Isolamento succao P-106",                tipo:"Borboleta", funcao:"Isolamento", DN:"5\"",  classe:"150#",Cv:680, K:0.5,  material:"316L/EPDM",norma:"API 609"},
+  {tag:"CV-106",  servico:"Retencao recalque P-106 (10 bar)",      tipo:"Retencao",  funcao:"Anti-refluxo",DN:"5\"",  classe:"300#",Cv:null,K:2.0,  material:"316L",norma:"API 6D"},
+  {tag:"PSV-101", servico:"Alivio biorreator (P_set = 50 mbar_g)",  tipo:"Peso morto",funcao:"Seguranca",  DN:"6\"",  classe:"—",   Cv:null,K:null, material:"316L",norma:"API 2000"},
+  {tag:"PSV-102", servico:"Alivio K-101 descarga (P_set = 12 bar)", tipo:"Mola",      funcao:"Seguranca",  DN:"2\"",  classe:"300#",Cv:null,K:null, material:"316L",norma:"API 520/ASME VIII"},
+  {tag:"XV-201",  servico:"Bloqueio biogas bruto BIO → K-101",     tipo:"Esfera",    funcao:"Isolamento", DN:"6\"",  classe:"150#",Cv:1200,K:0.05, material:"Aco carbono",norma:"API 6D"},
+  {tag:"XV-202",  servico:"Bloqueio biogas comprimido K-101 → C-101",tipo:"Esfera",  funcao:"Isolamento", DN:"5\"",  classe:"300#",Cv:680, K:0.05, material:"Aco carbono seamless",norma:"API 6D"},
+  {tag:"FCV-201", servico:"Controle pressao topo C-101 (biometano)",tipo:"Globo",    funcao:"Controle",   DN:"4\"",  classe:"300#",Cv:180, K:10.0, material:"316L",norma:"ISA S75.01"},
+  {tag:"XV-301",  servico:"Bloqueio digestato BIO → armazenamento", tipo:"Gaveta",   funcao:"Isolamento", DN:"4\"",  classe:"150#",Cv:236, K:0.17, material:"PEAD/epoxi",norma:"API 6D"},
+  {tag:"BV-101",  servico:"Regulacao agua torre resfriamento",      tipo:"Borboleta", funcao:"Regulacao",  DN:"2.5\"",classe:"150#",Cv:120, K:0.5,  material:"FF/EPDM",norma:"API 609"},
+  {tag:"XV-401",  servico:"Isolamento biometano saida S-101",       tipo:"Esfera",    funcao:"Isolamento", DN:"4\"",  classe:"300#",Cv:340, K:0.05, material:"316L",norma:"API 6D"},
+  {tag:"FCV-301", servico:"Controle vazao gas CHP-01",              tipo:"Borboleta", funcao:"Controle",   DN:"2\"",  classe:"150#",Cv:60,  K:0.5,  material:"316L/PTFE",norma:"ISA S75.01"}
+];
+
+Valvulas.run_all = function() { return Valvulas.LISTA; };
+
+/* =========================================================================
    EXPORT
    ========================================================================= */
 
@@ -1708,6 +1736,7 @@ var ECOGAS = {
   Hidraulica: Hidraulica,
   Trocadores: Trocadores,
   Bombas: Bombas,
+  Valvulas: Valvulas,
   RECHEIOS: RECHEIOS,
   _interp: _interp
 };

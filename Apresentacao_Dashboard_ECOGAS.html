@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECOGAS Dashboard — Apresentação Técnica</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body{font-family:'Segoe UI',system-ui,sans-serif;scroll-behavior:smooth}
+.section{padding:4rem 2rem;min-height:80vh;display:flex;flex-direction:column;justify-content:center}
+.section:nth-child(odd){background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%)}
+.section:nth-child(even){background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%)}
+.card{background:rgba(15,23,42,0.8);border:1px solid #334155;border-radius:12px;padding:24px;backdrop-filter:blur(8px)}
+.highlight{background:linear-gradient(90deg,#f59e0b,#d97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:0.5px}
+.metric{font-size:2.5rem;font-weight:800;line-height:1}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.animate{animation:fadeUp 0.6s ease-out forwards}
+@media print{.section{min-height:auto;page-break-inside:avoid;padding:2rem 1rem}body{background:#fff!important;color:#000!important}.card{background:#f8fafc!important;border-color:#e2e8f0!important}}
+</style>
+</head>
+<body class="bg-gray-950 text-gray-200">
+
+<!-- CAPA -->
+<div class="section items-center text-center" style="min-height:100vh;background:radial-gradient(ellipse at center,#1e293b 0%,#0f172a 70%)">
+  <div class="max-w-3xl">
+    <div class="w-20 h-20 bg-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+      <span class="text-4xl font-black text-gray-900">B</span>
+    </div>
+    <h1 class="text-5xl font-black text-white mb-4">ECOGAS Dashboard</h1>
+    <p class="text-xl text-amber-400 font-bold mb-2">Simulador Industrial de Biometano — Nível Aspen/HYSYS</p>
+    <p class="text-lg text-gray-400 mb-8">Codigestão Anaeróbia + Water Scrubbing | Pipeline Cascata v4</p>
+    <div class="flex gap-4 justify-center flex-wrap text-sm">
+      <span class="tag bg-emerald-900 text-emerald-300">11.867 Nm³/d biogás</span>
+      <span class="tag bg-sky-900 text-sky-300">7.288 Nm³/d biometano</span>
+      <span class="tag bg-amber-900 text-amber-300">354 kW CHP</span>
+      <span class="tag bg-purple-900 text-purple-300">7/7 sanity checks</span>
+    </div>
+    <p class="text-xs text-gray-600 mt-8">Projetos Industriais II · UFMS · 2026 · Grupo ECOGAS<br>G. Luz · Responsável Técnico | Pipeline: ecogas_v4</p>
+  </div>
+</div>
+
+<!-- 1. VISÃO GERAL -->
+<div class="section">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-3xl font-black text-white mb-2">1. O que é este Dashboard?</h2>
+    <p class="text-lg text-gray-400 mb-6">Uma ferramenta de simulação em tempo real que replica — em JavaScript puro — todo o pipeline de cálculos que um software como Aspen Plus ou HYSYS faria para uma planta de biometano.</p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="card">
+        <div class="text-amber-400 text-2xl mb-2">&#9889;</div>
+        <h3 class="font-bold text-white text-lg mb-2">Tempo Real</h3>
+        <p class="text-sm text-gray-400">Cada slider atualiza instantaneamente todos os cálculos — balanços, dimensionamentos, custos. Sem esperar simulação.</p>
+      </div>
+      <div class="card">
+        <div class="text-emerald-400 text-2xl mb-2">&#9989;</div>
+        <h3 class="font-bold text-white text-lg mb-2">Validado</h3>
+        <p class="text-sm text-gray-400">Calibrado contra o pipeline Python do grupo (ecogas_v4) com 0% de erro nos resultados-chave. 7 sanity checks automáticos.</p>
+      </div>
+      <div class="card">
+        <div class="text-sky-400 text-2xl mb-2">&#128218;</div>
+        <h3 class="font-bold text-white text-lg mb-2">Didático</h3>
+        <p class="text-sm text-gray-400">Cada número mostra a fórmula, a referência bibliográfica e a faixa de validade. Feito para ensinar e defender na banca.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. PIPELINE -->
+<div class="section">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-3xl font-black text-white mb-2">2. Pipeline Cascata (Modelo Computacional)</h2>
+    <p class="text-lg text-gray-400 mb-6">O cálculo segue a sequência exata do processo industrial — cada bloco alimenta o próximo:</p>
+    <div class="flex flex-wrap gap-3 items-center justify-center mb-8">
+      <span class="px-4 py-2 bg-amber-900/60 text-amber-300 rounded-lg font-bold text-sm">MX-01</span><span class="text-gray-600">→</span>
+      <span class="px-4 py-2 bg-emerald-900/60 text-emerald-300 rounded-lg font-bold text-sm">BIO-01</span><span class="text-gray-600">→</span>
+      <span class="px-4 py-2 bg-red-900/60 text-red-300 rounded-lg font-bold text-sm">HE-101</span><span class="text-gray-600">→</span>
+      <span class="px-4 py-2 bg-sky-900/60 text-sky-300 rounded-lg font-bold text-sm">K-101</span><span class="text-gray-600">→</span>
+      <span class="px-4 py-2 bg-orange-900/60 text-orange-300 rounded-lg font-bold text-sm">HE-102</span><span class="text-gray-600">→</span>
+      <span class="px-4 py-2 bg-emerald-900/60 text-emerald-300 rounded-lg font-bold text-sm">C-101 HPWS</span><span class="text-gray-600">→</span>
+      <span class="px-4 py-2 bg-purple-900/60 text-purple-300 rounded-lg font-bold text-sm">S-101</span><span class="text-gray-600">→</span>
+      <span class="px-4 py-2 bg-rose-900/60 text-rose-300 rounded-lg font-bold text-sm">CHP-01</span>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      <div class="card"><strong class="text-amber-400">MX-01:</strong> <span class="text-gray-400">Mistura de 3 substratos (lodo 80% + vinhaça 10% + resíduo 10%). Balanço de massa e composição elementar.</span></div>
+      <div class="card"><strong class="text-emerald-400">BIO-01:</strong> <span class="text-gray-400">4 biorreatores CSTR. Cinética de Haldane dual-pathway (acetoclástica + hidrogenotrófica). TRH = 28.8 d.</span></div>
+      <div class="card"><strong class="text-red-400">HE-101:</strong> <span class="text-gray-400">Trocador casco-tubo. Aquece substrato de 25→35°C com água quente do CHP. LMTD, Uo, Re, ΔP.</span></div>
+      <div class="card"><strong class="text-sky-400">K-101:</strong> <span class="text-gray-400">Compressor 2 estágios politrópico (n=1.3). P1=1atm → P2=10bar abs. Inter-resfriamento em HE-102.</span></div>
+      <div class="card"><strong class="text-emerald-400">C-101 HPWS:</strong> <span class="text-gray-400">Coluna de absorção. Onda 1968 (kL/kG), NTU/HTU, GPDC flooding, Henry-Sander. Q_água = 81.63 m³/h.</span></div>
+      <div class="card"><strong class="text-purple-400">S-101:</strong> <span class="text-gray-400">Dessecador PSA (peneira molecular). Ponto de orvalho -40°C. ANP 685/2017 compliance.</span></div>
+      <div class="card"><strong class="text-rose-400">CHP-01:</strong> <span class="text-gray-400">Cogeração (η_el=40%, η_th=45%). Fecha o loop térmico do digestor. Produz 354 kW elétrico.</span></div>
+      <div class="card"><strong class="text-gray-400">Hidráulica:</strong> <span class="text-gray-400">13 trechos com Colebrook-White. 8 bombas (P-101 a P-108). 18 válvulas especificadas.</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. ABAS DO DASHBOARD -->
+<div class="section">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-3xl font-black text-white mb-2">3. Abas do Dashboard — O Que Cada Uma Mostra</h2>
+    <p class="text-lg text-gray-400 mb-6">14 abas cobrindo desde o PFD interativo até análise econômica com VPL/TIR:</p>
+    <div class="space-y-3">
+      <div class="card flex gap-4 items-start"><span class="text-2xl">&#127981;</span><div><h4 class="font-bold text-white">PFD Interativo</h4><p class="text-sm text-gray-400">Fluxograma de processo vetorial (SVG). Clique em qualquer equipamento para ver dimensionamento, material, norma e fórmulas. Linhas animadas mostram o fluxo.</p></div></div>
+      <div class="card flex gap-4 items-start"><span class="text-2xl">&#9878;</span><div><h4 class="font-bold text-white">Balanço de Massa</h4><p class="text-sm text-gray-400">Conservação de massa com erro < 0.01%. Tabela de alimentação, biogás, digestato, scrubber. Diagrama Sankey de massa. Tudo reativo aos sliders.</p></div></div>
+      <div class="card flex gap-4 items-start"><span class="text-2xl">&#128293;</span><div><h4 class="font-bold text-white">Balanço de Energia</h4><p class="text-sm text-gray-400">1ª Lei da Termodinâmica. PCI do CH₄, potência mecânica (bombas + compressor), demanda térmica, eficiência energética global. Sankey energético.</p></div></div>
+      <div class="card flex gap-4 items-start"><span class="text-2xl">&#128167;</span><div><h4 class="font-bold text-white">Hidráulica</h4><p class="text-sm text-gray-400">13 linhas de processo com Swamee-Jain/Colebrook (±1%). Velocidade, Reynolds, fator de atrito, perda de carga distribuída e localizada.</p></div></div>
+      <div class="card flex gap-4 items-start"><span class="text-2xl">&#9875;</span><div><h4 class="font-bold text-white">Bombas (P-101 a P-108)</h4><p class="text-sm text-gray-400">Dimensionamento completo: Hm, potência instalada, Reynolds, regime (7/8 turbulento), NPSHd, tipo/material/norma. P-106 domina com 48 kW (95%).</p></div></div>
+      <div class="card flex gap-4 items-start"><span class="text-2xl">&#128721;</span><div><h4 class="font-bold text-white">Válvulas (18 unidades)</h4><p class="text-sm text-gray-400">Especificação por ISA S75.01, API 6D, API 520. Gaveta, esfera, globo, borboleta, retenção, segurança. Cv, classe de pressão, material.</p></div></div>
+      <div class="card flex gap-4 items-start"><span class="text-2xl">&#129514;</span><div><h4 class="font-bold text-white">HPWS Rigorosa</h4><p class="text-sm text-gray-400">Coluna de absorção com correlação de Onda 1968 (kL/kG), integração numérica NOG (2000 pts), GPDC, slip CH₄, flash recovery, verificação isotérmica.</p></div></div>
+      <div class="card flex gap-4 items-start"><span class="text-2xl">&#128293;</span><div><h4 class="font-bold text-white">Trocadores de Calor</h4><p class="text-sm text-gray-400">HE-101 (pré-aquecimento) e HE-102 (intercooler). Método de Kern: LMTD, Uo, número de tubos, Re, ΔP, gargalo térmico identificado.</p></div></div>
+      <div class="card flex gap-4 items-start"><span class="text-2xl">&#128200;</span><div><h4 class="font-bold text-white">Gráficos + Otimização + Econômico</h4><p class="text-sm text-gray-400">Cenários A-E, sensibilidade 1D, superfície 3D, VPL/TIR/Payback com taxa ajustável. Distribuição CAPEX/OPEX em gráficos interativos (Plotly).</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. MÉTRICAS DE QUALIDADE -->
+<div class="section">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-3xl font-black text-white mb-2">4. Por Que Este Dashboard É Confiável?</h2>
+    <p class="text-lg text-gray-400 mb-6">Métricas quantitativas que demonstram qualidade de nível profissional:</p>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+      <div class="card text-center"><div class="metric text-emerald-400">0%</div><p class="text-sm text-gray-500 mt-2">Erro vs Python v4</p></div>
+      <div class="card text-center"><div class="metric text-sky-400">7/7</div><p class="text-sm text-gray-500 mt-2">Sanity checks OK</p></div>
+      <div class="card text-center"><div class="metric text-amber-400">18</div><p class="text-sm text-gray-500 mt-2">Correlações científicas</p></div>
+      <div class="card text-center"><div class="metric text-purple-400">14</div><p class="text-sm text-gray-500 mt-2">Abas especializadas</p></div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      <div class="card">
+        <h4 class="font-bold text-amber-400 mb-2">Correlações utilizadas</h4>
+        <ul class="text-gray-400 space-y-1 list-disc pl-4">
+          <li>Haldane (cinética acetoclástica/hidrogenotrófica)</li>
+          <li>Colebrook-White / Swamee-Jain (atrito)</li>
+          <li>Onda 1968 (coeficientes de transferência)</li>
+          <li>Henry-Sander 2015 (solubilidade CO₂/CH₄)</li>
+          <li>GPDC Kister & Gill (flooding)</li>
+          <li>Kern / LMTD (trocadores de calor)</li>
+          <li>Franzini & Finnemore (Bernoulli/BEM)</li>
+          <li>Wilke-Chang (difusividade líquida)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4 class="font-bold text-amber-400 mb-2">Referências principais</h4>
+        <ul class="text-gray-400 space-y-1 list-disc pl-4">
+          <li>Metcalf & Eddy (2014) — Wastewater Eng., 5ª ed.</li>
+          <li>Chernicharo (2007) — Reatores Anaeróbios</li>
+          <li>Perry's Chemical Engineers' Handbook, 8ª ed.</li>
+          <li>Treybal (1980) — Mass-Transfer Operations</li>
+          <li>Towler & Sinnott (2012) — Chem. Eng. Design</li>
+          <li>Crane TP-410 (2011) — Flow of Fluids</li>
+          <li>Karassik (2001) — Pump Handbook</li>
+          <li>ANP 685/2017 — Especificações biometano</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 5. DIFERENCIAL -->
+<div class="section">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-3xl font-black text-white mb-2">5. Diferencial Competitivo</h2>
+    <p class="text-lg text-gray-400 mb-6">O que separa este dashboard de uma planilha Excel ou de um relatório estático:</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="card border-amber-800/60">
+        <h4 class="font-bold text-amber-400 text-lg mb-3">Método Tradicional</h4>
+        <ul class="text-sm text-gray-500 space-y-2">
+          <li>❌ Planilhas isoladas, sem integração</li>
+          <li>❌ Mudar um parâmetro exige recalcular tudo manualmente</li>
+          <li>❌ Sem validação automática de coerência física</li>
+          <li>❌ Resultados estáticos (PDF/impresso)</li>
+          <li>❌ Difícil de auditar — "de onde veio esse número?"</li>
+        </ul>
+      </div>
+      <div class="card border-emerald-800/60">
+        <h4 class="font-bold text-emerald-400 text-lg mb-3">Dashboard ECOGAS</h4>
+        <ul class="text-sm text-gray-300 space-y-2">
+          <li>✅ Pipeline cascata integrado (cada bloco alimenta o próximo)</li>
+          <li>✅ Sliders recalculam tudo em <50 ms</li>
+          <li>✅ 7 sanity checks automáticos + verificação de Reynolds</li>
+          <li>✅ Interativo — explore cenários em tempo real</li>
+          <li>✅ Cada número mostra fórmula + referência no tooltip</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 6. COMO USAR -->
+<div class="section">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-3xl font-black text-white mb-2">6. Como Utilizar</h2>
+    <p class="text-lg text-gray-400 mb-6">Passo a passo para explorar o dashboard:</p>
+    <div class="space-y-4 text-sm">
+      <div class="card flex gap-4"><span class="text-3xl font-black text-amber-400/50">01</span><div><h4 class="font-bold text-white">Abra o Dashboard</h4><p class="text-gray-400">Acesse via GitHub Pages ou abra <code class="text-sky-400">index.html</code> localmente. Funciona 100% offline (sem servidor).</p></div></div>
+      <div class="card flex gap-4"><span class="text-3xl font-black text-amber-400/50">02</span><div><h4 class="font-bold text-white">Explore as Abas</h4><p class="text-gray-400">Comece pelo PFD para visão geral. Clique nos equipamentos para ver dimensionamento. Cada aba é independente.</p></div></div>
+      <div class="card flex gap-4"><span class="text-3xl font-black text-amber-400/50">03</span><div><h4 class="font-bold text-white">Ajuste os Sliders</h4><p class="text-gray-400">Clique em "⚙ Premissas" no canto superior direito. Mova os sliders de TRH, vazão, frações — veja o impacto instantâneo.</p></div></div>
+      <div class="card flex gap-4"><span class="text-3xl font-black text-amber-400/50">04</span><div><h4 class="font-bold text-white">Verifique Coerência</h4><p class="text-gray-400">Os badges no header mostram os sanity checks. Verde = coerente. Vermelho = inconsistência (ex: violação de conservação de massa).</p></div></div>
+      <div class="card flex gap-4"><span class="text-3xl font-black text-amber-400/50">05</span><div><h4 class="font-bold text-white">Compare Cenários</h4><p class="text-gray-400">Na aba Otimização, compare cenários A-E ou salve seus próprios. Na aba Econômico, veja VPL/TIR/Payback com taxa ajustável.</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 7. NÚMEROS-CHAVE -->
+<div class="section">
+  <div class="max-w-5xl mx-auto text-center">
+    <h2 class="text-3xl font-black text-white mb-8">7. Números-Chave do Projeto</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="card"><div class="metric text-amber-400">500</div><p class="text-xs text-gray-500 mt-1">m³/dia substrato</p></div>
+      <div class="card"><div class="metric text-emerald-400">11.867</div><p class="text-xs text-gray-500 mt-1">Nm³/d biogás</p></div>
+      <div class="card"><div class="metric text-sky-400">7.288</div><p class="text-xs text-gray-500 mt-1">Nm³/d biometano</p></div>
+      <div class="card"><div class="metric text-purple-400">97%</div><p class="text-xs text-gray-500 mt-1">pureza CH₄</p></div>
+      <div class="card"><div class="metric text-red-400">354</div><p class="text-xs text-gray-500 mt-1">kW elétrico CHP</p></div>
+      <div class="card"><div class="metric text-orange-400">269</div><p class="text-xs text-gray-500 mt-1">kW térmico dig.</p></div>
+      <div class="card"><div class="metric text-rose-400">50.4</div><p class="text-xs text-gray-500 mt-1">kW bombas total</p></div>
+      <div class="card"><div class="metric text-cyan-400">28.8</div><p class="text-xs text-gray-500 mt-1">dias TRH</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="section items-center text-center" style="min-height:40vh">
+  <div>
+    <h2 class="text-2xl font-bold text-gray-400 mb-4">Grupo ECOGAS — UFMS 2026</h2>
+    <p class="text-sm text-gray-600">Projetos Industriais II · Profa. Janaína · Engenharia Química</p>
+    <p class="text-xs text-gray-700 mt-4">Dashboard disponível em: <span class="text-sky-400">https://luninscg.github.io/projetos-2-biogas/</span></p>
+  </div>
+</div>
+
+</body>
+</html>
