@@ -1686,7 +1686,7 @@ function app(){return{
     {tag:'TQ-04',name:'Reserv. Biometano (10 bar)',dim:(tq[3]?.V_total_m3||140)+' m3, D='+(tq[3]?.D_m||4.2)+'m',power:'-',mat:tq[3]?.material||'SA-516',cost:150000},
     {tag:'CHP-01',name:'Motor Cogeracao (Pacote)',dim:(m.chp_v4?.P_elec_kW||'?')+' kWe',power:(m.chp_v4?.P_elec_kW||'?')+' kWe + '+(m.chp_v4?.P_therm_kW||'?')+' kWt',mat:'Pacote',cost:400000}
   ];
-    bm.forEach(function(b){this.equipTable.push({tag:b.tag,name:'Bomba '+b.servico.substring(0,25),dim:b.Q_m3h.toFixed(1)+' m3/h, H='+b.H_m.toFixed(1)+'m',power:b.P_inst_kW.toFixed(1)+' kW',mat:b.mat||'FF/316L',cost:b.P_inst_kW>10?25000:15000});}.bind(this));
+    bm.forEach(function(b){this.equipTable.push({tag:b.tag,name:'Bomba '+(b.descr||'').substring(0,25),dim:b.Q_m3h.toFixed(1)+' m3/h, H='+b.H_m_total.toFixed(1)+'m',power:b.P_inst_kW.toFixed(1)+' kW',mat:b.mat||'FF/316L',cost:b.P_inst_kW>10?25000:15000});}.bind(this));
   },
   selectEquipSlides(tag){const m=this.m,p=this.p;
     const info={
